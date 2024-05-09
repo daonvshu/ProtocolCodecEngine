@@ -48,6 +48,16 @@ public:
     }
 
     /**
+     * @brief 注册类型，不使用其解码器，只编码
+     * @tparam T
+     * @tparam Codec
+     */
+    template<typename T, template<typename> class Codec>
+    void registerType() {
+        encoder.addType(T::Type, new Codec<T>);
+    }
+
+    /**
      * @brief 数据编码
      * @tparam T
      * @param data
