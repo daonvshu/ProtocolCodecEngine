@@ -7,11 +7,13 @@
 PROTOCOL_CODEC_NAMESPACE_BEGIN
 
 enum class ProtocolFlag {
-    Flag_Header,
+    Flag_Header = 0,
     Flag_Size,
     Flag_Content,
     Flag_Verify,
     Flag_End,
+
+    Flag_Max,
 };
 
 inline QDebug operator<<(QDebug debug, ProtocolFlag flag) {
@@ -30,6 +32,8 @@ inline QDebug operator<<(QDebug debug, ProtocolFlag flag) {
             break;
         case ProtocolFlag::Flag_End:
             debug << "Flag_End";
+            break;
+        default:
             break;
     }
     return debug;

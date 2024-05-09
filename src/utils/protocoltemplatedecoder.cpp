@@ -1,37 +1,49 @@
 #include "utils/protocoltemplatedecoder.h"
 
+#include "flagdata/dataheader.h"
+#include "flagdata/datacontent.h"
+#include "flagdata/datasize.h"
+#include "flagdata/dataverify.h"
+#include "flagdata/dataend.h"
+
+#include "protocolexception.h"
+
 #include <qdebug.h>
 
 PROTOCOL_CODEC_NAMESPACE_BEGIN
 
-QList<QSharedPointer<ProtocolFlagData>> ProtocolTemplateDecoder::parse(const QString &templateStr) {
+QList<QSharedPointer<ProtocolFlagData>> ProtocolTemplateDecoder::parse(const QString &templateStr, bool contentRequired) {
     QList<QSharedPointer<ProtocolFlagData>> data;
 
     auto segments = parseToSegment(templateStr);
     for (const auto& segment : segments) {
         if (segment.type == "H") {
-            if (segment.data.isEmpty()) {
-                throw ProtocolTemplateDecodeException("header required content!");
+            if (contentRequired && segment.data.isEmpty()) {
+                throw ProtocolException("header required content!");
             }
             data.append(QSharedPointer<ProtocolFlagDataHeader>::create(QByteArray::fromHex(segment.data.toLatin1())));
         } else if (segment.type == "S") {
-            if (segment.data.isEmpty()) {
-                throw ProtocolTemplateDecodeException("size required content!");
+            if (contentRequired && segment.data.isEmpty()) {
+                throw ProtocolException("size required content!");
             }
             data.append(QSharedPointer<ProtocolFlagDataSize>::create(segment.data.toInt()));
         } else if (segment.type == "C") {
             data.append(QSharedPointer<ProtocolFlagDataContent>::create());
         } else if (segment.type == "V") {
-            if (segment.data.toUpper() == "CRC") {
-                data.append(QSharedPointer<ProtocolFlagDataVerify>::create(ProtocolFlagDataVerify::Crc));
-            } else if (segment.data.toUpper() == "SUM") {
-                data.append(QSharedPointer<ProtocolFlagDataVerify>::create(ProtocolFlagDataVerify::Sum));
-            } else {
-                throw ProtocolTemplateDecodeException("unknown verify type:" + segment.data);
+            if (contentRequired) {
+                if (segment.data.toUpper() == "CRC16") {
+                    data.append(QSharedPointer<ProtocolFlagDataVerify>::create(ProtocolFlagDataVerify::Crc16));
+                } else if (segment.data.toUpper() == "SUM8") {
+                    data.append(QSharedPointer<ProtocolFlagDataVerify>::create(ProtocolFlagDataVerify::Sum8));
+                } else if (segment.data.toUpper() == "SUM16") {
+                    data.append(QSharedPointer<ProtocolFlagDataVerify>::create(ProtocolFlagDataVerify::Sum16));
+                } else {
+                    throw ProtocolException("unknown verify type:" + segment.data);
+                }
             }
         } else if (segment.type == "E") {
-            if (segment.data.isEmpty()) {
-                throw ProtocolTemplateDecodeException("tail required content!");
+            if (contentRequired && segment.data.isEmpty()) {
+                throw ProtocolException("tail required content!");
             }
             data.append(QSharedPointer<ProtocolFlagDataEnd>::create(QByteArray::fromHex(segment.data.toLatin1())));
         }
@@ -66,7 +78,7 @@ QList<ProtocolTemplateDecoder::Segment> ProtocolTemplateDecoder::parseToSegment(
                 if (!lastSegment.type.isEmpty()) {
                     segments.last().data.append(c);
                 } else {
-                    throw ProtocolTemplateDecodeException(QLatin1String("number begin with null type:") + c);
+                    throw ProtocolException(QLatin1String("number begin with null type:") + c);
                 }
             }
             continue;
@@ -79,7 +91,7 @@ QList<ProtocolTemplateDecoder::Segment> ProtocolTemplateDecoder::parseToSegment(
                 lastSegment.isContentBegin = true;
             } else {
                 if (segments.isEmpty()) {
-                    throw ProtocolTemplateDecodeException(QLatin1String("content with null type:") + lastSegment.data);
+                    throw ProtocolException(QLatin1String("content with null type:") + lastSegment.data);
                 } else {
                     segments.last().data = lastSegment.data;
                 }
@@ -88,7 +100,7 @@ QList<ProtocolTemplateDecoder::Segment> ProtocolTemplateDecoder::parseToSegment(
             continue;
         }
 
-        throw ProtocolTemplateDecodeException(QLatin1String("unknown snippet char:") + c);
+        throw ProtocolException(QLatin1String("unknown snippet char:") + c);
     }
 
     return segments;

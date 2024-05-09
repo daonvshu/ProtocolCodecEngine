@@ -11,29 +11,9 @@
 
 PROTOCOL_CODEC_NAMESPACE_BEGIN
 
-class ProtocolTemplateDecodeException : public QException {
-public:
-    explicit ProtocolTemplateDecodeException(QString reason): _reason(std::move(reason)) {}
-
-    void raise() const override {
-        throw* this;
-    }
-
-    QException* clone() const override {
-        return new ProtocolTemplateDecodeException(*this);
-    }
-
-    QString reason() const {
-        return _reason;
-    }
-
-private:
-    QString _reason;
-};
-
 class ProtocolTemplateDecoder {
 public:
-    static QList<QSharedPointer<ProtocolFlagData>> parse(const QString& templateStr);
+    static QList<QSharedPointer<ProtocolFlagData>> parse(const QString& templateStr, bool contentRequired = true);
 
 private:
     struct Segment {
