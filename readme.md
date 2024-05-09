@@ -61,6 +61,8 @@ public:
         codecEngine.setVerifyFlags("SC");
         //注册类型
         codecEngine.registerType<JsonCodec<DataType1>>(this, &TestClass::dataType1Callback);
+        //不使用解码器
+        codecEngine.registerType<DataType1, JsonCodec>();
     }
 
     void dataType1Callback(const DataType1& data) {
@@ -118,6 +120,8 @@ public:
         codecEngine.setVerifyFlags("SC");
         //注册类型
         codecEngine.registerType<SerializeCodec<DataType2>>(this, &TestClass::dataType2Callback);
+        //不使用解码器
+        codecEngine.registerType<DataType2, SerializeCodec>();
     }
 
     void dataType2Callback(const DataType2& data) {
