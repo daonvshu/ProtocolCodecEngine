@@ -152,3 +152,30 @@ auto bytes = codecEngine.encode(data1);
 DataType2 data2{ "abcde" };
 bytes = codecEngine.encode(data2);
 ```
+
+### 5. 空消息内容编解码
+
+对于没有消息内容的指令编解码，使用其`registerType`重载函数：
+
+```cpp
+class TestClass {
+public:
+    void registerType() {
+        //定义协议帧格式
+        codecEngine.frameDeclare("H(5AFF)S2CV(CRC16)E(FE)");
+        //定义校验使用的标志符
+        codecEngine.setVerifyFlags("SC");
+        //注册类型
+        codecEngine.registerType<0x03>(this, &TestClass::dataType3Callback);
+        //编码
+        auto bytes = codecEngine.encode<0x03>();
+    }
+
+    void dataType3Callback() {
+        qDebug() << "data3 callback!";
+    }
+
+private:
+    ProtocolCodecEngine codecEngine;
+}
+```

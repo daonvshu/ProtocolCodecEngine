@@ -70,6 +70,7 @@ public:
         codecEngine.setVerifyFlags("SC");
         codecEngine.registerType<JsonCodec<DataType1>>(this, &TestClass::dataType1Callback);
         codecEngine.registerType<SerializeCodec<DataType2>>(this, &TestClass::dataType2Callback);
+        codecEngine.registerType<0x03>(this, &TestClass::dataType3Callback);
 
         DataType1 data1{ 10 };
         auto bytes = codecEngine.encode(data1);
@@ -79,6 +80,11 @@ public:
         bytes = codecEngine.encode(data2);
         bytes.prepend("sikf8").append("iasf");
         codecEngine.appendBuffer(bytes);
+        bytes = codecEngine.encode<0x03>();
+        bytes.prepend("fasad").append("fgrs4");
+        codecEngine.appendBuffer(bytes);
+        bytes = codecEngine.encode<0x04>();
+        codecEngine.appendBuffer(bytes);
     }
 
     void dataType1Callback(const DataType1& data) {
@@ -87,6 +93,10 @@ public:
 
     void dataType2Callback(const DataType2& data) {
         qDebug() << "data2 callback:" << data.data;
+    }
+
+    void dataType3Callback() {
+        qDebug() << "data3 callback!";
     }
 
 private:

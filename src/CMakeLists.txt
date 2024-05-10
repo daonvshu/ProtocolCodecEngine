@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.12)
 
-project(protocol_codec_engine VERSION 0.0.2)
+project(protocol_codec_engine VERSION 0.0.3)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)

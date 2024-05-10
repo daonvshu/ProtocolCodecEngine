@@ -58,6 +58,20 @@ public:
     }
 
     /**
+     * @brief 注册类型，仅定义命令
+     * @tparam I
+     * @tparam T
+     * @param context
+     * @param callback
+     */
+    template<int I, typename T>
+    void registerType(T* context, void(T::*callback)()) {
+        decoder.addType(I, [context, callback] (const QByteArray& content) {
+            (context->*callback)();
+        });
+    }
+
+    /**
      * @brief 数据编码
      * @tparam T
      * @param data
@@ -68,6 +82,16 @@ public:
         auto codec = encoder.getCodec(T::Type);
         auto content = dynamic_cast<ProtocolTypeCodec<T>*>(codec)->encode(data);
         return encoder.encodeFrame(content, T::Type);
+    }
+
+    /**
+     * @brief 数据编码，仅编码
+     * @tparam I
+     * @return
+     */
+    template<int I>
+    QByteArray encode() {
+        return encoder.encodeFrame(QByteArray(), I);
     }
 
     /**
