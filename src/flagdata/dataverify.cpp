@@ -11,10 +11,10 @@ PROTOCOL_CODEC_NAMESPACE_BEGIN
  * @param lens
  * @return char类型
  */
-static char sumCheck(const char* arr, int lens) {
-    char sum = 0;
+static uchar sumCheck(const char* arr, int lens) {
+    uchar sum = 0;
     for (int i = 0; i < lens; i++) {
-        sum += *(arr + i);
+        sum += (uchar)*(arr + i);
     }
     return sum;
 }
@@ -25,10 +25,10 @@ static char sumCheck(const char* arr, int lens) {
  * @param lens
  * @return short类型
  */
-static short sumCheck2(const char* arr, int lens) {
-    short sum = 0;
+static ushort sumCheck2(const char* arr, int lens) {
+    ushort sum = 0;
     for (int i = 0; i < lens; i++) {
-        sum += *(arr + i) & 0xff;
+        sum += (ushort)(*(arr + i) & 0xff);
     }
     return sum;
 }
@@ -43,7 +43,7 @@ static uint16_t crc16(uchar *data, uchar length) {
     int i;
     uint16_t crc_result = 0xffff;
     while (length--) {
-        crc_result ^= *data++;
+        crc_result ^= (*data++) & 0xff;
         for (i = 0; i < 8; i++) {
             if (crc_result & 0x01)
                 crc_result = (crc_result >> 1) ^ 0xa001;
@@ -114,12 +114,12 @@ bool ProtocolFlagDataVerify::verify(char *data, int offset, int maxSize) {
             return curVerify == verifyCode;
         }
         case Sum8: {
-            char curVerify = sumCheck(data + verifyBegin, verifySize);
-            return curVerify == verifyCodePtr[0];
+            uchar curVerify = sumCheck(data + verifyBegin, verifySize);
+            return curVerify == (uchar)verifyCodePtr[0];
         }
         case Sum16: {
-            short curVerify = sumCheck2(data + verifyBegin, verifySize);
-            auto verifyCode = (short)((verifyCodePtr[0] & 0xff) | ((verifyCodePtr[1] & 0xff) << 8));
+            ushort curVerify = sumCheck2(data + verifyBegin, verifySize);
+            auto verifyCode = (ushort)((verifyCodePtr[0] & 0xff) | ((verifyCodePtr[1] & 0xff) << 8));
             return curVerify == verifyCode;
         }
     }
@@ -162,11 +162,11 @@ QByteArray ProtocolFlagDataVerify::getVerifyCode(const QByteArray &buff, int con
             return QByteArray((char*)&curVerify, 2);
         }
         case Sum8: {
-            char curVerify = sumCheck(dataPtr + verifyBegin, verifySize);
+            uchar curVerify = sumCheck(dataPtr + verifyBegin, verifySize);
             return QByteArray(1, curVerify);
         }
         case Sum16: {
-            short curVerify = sumCheck2(dataPtr + verifyBegin, verifySize);
+            ushort curVerify = sumCheck2(dataPtr + verifyBegin, verifySize);
             return QByteArray((char*)&curVerify, 2);
         }
     }

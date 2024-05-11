@@ -19,7 +19,7 @@ bool ProtocolFlagDataSize::verify(char *data, int offset, int maxSize) {
     //小端序
     dataSize = 0;
     for (int i = 0; i < byteSize; i++) {
-        dataSize |= data[offset + i] << (8 * i);
+        dataSize |= (data[offset + i] & 0xff) << (8 * i);
     }
     return true;
 }
