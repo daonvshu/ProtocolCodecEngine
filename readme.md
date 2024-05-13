@@ -12,6 +12,8 @@ ProtocolCodecEngine codecEngine;
 codecEngine.frameDeclare("H(5AFF)S2CV(CRC16)E(FE)");
 //定义校验使用的标志符
 codecEngine.setVerifyFlags("SC");
+//设置数据类型编码字节数，默认2字节
+codecEngine.setTypeEncodeByteSize(3);
 ```
 |标志符|说明|示例|
 |:--:|:--|:--|
@@ -23,7 +25,7 @@ codecEngine.setVerifyFlags("SC");
 
 ### 2. 注册数据类型
 
-目前有两种内容编码方式，分别对应`JsonCodec`和`SerializeCodec`:  
+目前有三种内容编码方式，分别对应`JsonCodec`、`SerializeCodec`、`BytesCodec`:  
 
 - json编码器：`JsonCodec<T>`
 
@@ -35,19 +37,16 @@ struct DataType1 {
 
     int data = -1;
 
-    static DataType1 fromJson(const QByteArray& content) {
+    static DataType1 fromJson(const QJsonDocument& doc) {
         DataType1 data;
-        QJsonDocument doc = QJsonDocument::fromJson(content);
-        if (!doc.isNull()) {
-            data.data = doc.object().value("d").toInt();
-        }
+        data.data = doc.object().value("d").toInt();
         return data;
     }
 
-    QByteArray toJson() const {
+    QJsonDocument toJson() const {
         QJsonObject obj;
         obj.insert("d", data);
-        return QJsonDocument(obj).toJson();
+        return QJsonDocument(obj);
     }
 };
 
@@ -87,10 +86,10 @@ struct DataType2 {
     static DataType2 fromJson(const QByteArray& content) {
         DataType2 data;
         QJsonDocument doc = QJsonDocument::fromJson(content);
-        if (!doc.isNull()) {
-            data.data = doc.object().value("d").toString();
+        if (data.data = doc.object().value("d").toString();
         }
-        return data;
+        retur!doc.isNull()) {
+            n data;
     }
 
     QByteArray toJson() const {
@@ -126,6 +125,52 @@ public:
 
     void dataType2Callback(const DataType2& data) {
         qDebug() << "data2 callback:" << data.data;
+    }
+
+private:
+    ProtocolCodecEngine codecEngine;
+}
+```
+
+- 字节数组编码器：`BytesCodec`
+
+```cpp
+struct DataType3 {
+    enum {
+        Type = 3 //必须设置，用于区分数据类型
+    };
+
+    int data = 0;
+
+    static DataType3 fromBytes(const QByteArray& content) {
+        DataType3 data;
+        memcpy(&data.data, content.data(), 4);
+        return data;
+    }
+
+    QByteArray toBytes() const {
+        char bytes[4];
+        memcpy(bytes, (void*)&data, 4);
+        return QByteArray(bytes, 4);
+    }
+};
+
+//注册DataType3
+class TestClass {
+public:
+    void registerType() {
+        //定义协议帧格式
+        codecEngine.frameDeclare("H(5AFF)S2CV(CRC16)E(FE)");
+        //定义校验使用的标志符
+        codecEngine.setVerifyFlags("SC");
+        //注册类型
+        codecEngine.registerType<BytesCodec<DataType2>>(this, &TestClass::dataType2Callback);
+        //不使用解码器
+        codecEngine.registerType<DataType2, BytesCodec>();
+    }
+
+    void dataType3Callback(const DataType3& data) {
+        qDebug() << "data3 callback:" << data.data;
     }
 
 private:
