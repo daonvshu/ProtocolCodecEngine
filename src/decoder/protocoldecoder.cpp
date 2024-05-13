@@ -37,6 +37,7 @@ void ProtocolDecoder::addBuffer(const QByteArray &buffer) {
     int dataSize = bufferCache.size();
 
     int decodedOffset = 0;
+    int decodedBegin = 0;
 
     while (dataOffset < dataSize) {
         int frameOffset = dataOffset;
@@ -44,6 +45,9 @@ void ProtocolDecoder::addBuffer(const QByteArray &buffer) {
         for (const auto& flag : protocolFlags) {
             bool segmentValid = flag->verify(data, frameOffset, dataSize);
             if (segmentValid) {
+                if (frameOffset == dataOffset) { //记录第一次成功匹配开始
+                    decodedBegin = dataOffset;
+                }
                 flag->doFrameOffset(frameOffset);
             } else {
                 frameDecodeSuccess = false;
@@ -58,16 +62,17 @@ void ProtocolDecoder::addBuffer(const QByteArray &buffer) {
 
             auto content = get<ProtocolFlagDataContent>(ProtocolFlag::Flag_Content)->contentData;
             int type = 0;
-            memcpy(&type, content.data(), 2);
+            memcpy(&type, content.data(), mTypeByteSize);
             auto decoder = typeDecoders[type];
             if (!decoder) {
-                qWarning() << "cannot find decoder to decode frame type:" << type;
+                qWarning() << QString::asprintf("cannot find decoder to decode frame type: 0x%x", type);
             } else {
-                decoder(content.mid(2));
+                decoder(content.mid(mTypeByteSize));
             }
         }
     }
 
+    decodedOffset = qMax(decodedOffset, decodedBegin); //如果第一个子对象匹配成功，则移除前置垃圾数据
     if (decodedOffset != 0) {
         bufferCache = bufferCache.mid(decodedOffset);
     }

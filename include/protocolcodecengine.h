@@ -32,6 +32,12 @@ public:
     void setVerifyFlags(const QString& flagStr);
 
     /**
+     * @brief 设置类型编解码使用的字节数，默认2字节，最大4字节
+     * @param size
+     */
+    void setTypeEncodeByteSize(int size);
+
+    /**
      * @brief 注册类型和解析回调
      * @tparam T 类型
      * @tparam K 回调类类型

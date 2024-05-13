@@ -2,6 +2,7 @@
 
 #include <qbytearray.h>
 #include <qdatastream.h>
+#include <qjsondocument.h>
 
 #include "global.h"
 
@@ -23,11 +24,16 @@ template<typename T>
 class JsonCodec : public ProtocolTypeCodec<T> {
 public:
     T decode(const QByteArray &content) override {
-        return T::fromJson(content);
+        auto doc = QJsonDocument::fromJson(content);
+        if (doc.isNull()) {
+            return T();
+        }
+        return T::fromJson(doc);
     }
 
     QByteArray encode(const T &data) override {
-        return data.toJson();
+        QJsonDocument doc = data.toJson();
+        return doc.toJson(QJsonDocument::Compact);
     }
 };
 
@@ -46,6 +52,18 @@ public:
         QDataStream out(&buffer, QIODevice::WriteOnly);
         out << data;
         return buffer;
+    }
+};
+
+template<typename T>
+class BytesCodec : public ProtocolTypeCodec<T> {
+public:
+    T decode(const QByteArray &content) override {
+        return T::fromBytes(content);
+    }
+
+    QByteArray encode(const T &data) override {
+        return data.toBytes();
     }
 };
 

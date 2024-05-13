@@ -32,7 +32,7 @@ QByteArray ProtocolEncoder::encodeFrame(const QByteArray &content, int dataType)
                 break;
             case ProtocolFlag::Flag_Size: {
                 auto sizeFlag = qSharedPointerCast<ProtocolFlagDataSize>(flag);
-                int contentSize = content.size() + 2;
+                int contentSize = content.size() + mTypeByteSize;
                 auto sizeBuff = (char*) malloc(sizeFlag->byteSize);
                 for (int i = 0; i < sizeFlag->byteSize; i++) {
                     sizeBuff[i] = (char)((contentSize >> (i * 8)) & 0xff);
@@ -44,7 +44,7 @@ QByteArray ProtocolEncoder::encodeFrame(const QByteArray &content, int dataType)
                 break;
             case ProtocolFlag::Flag_Content: {
                 contentOffset = buffer.size();
-                buffer.append((char*)&dataType, 2).append(content);
+                buffer.append((char*)&dataType, mTypeByteSize).append(content);
             }
                 break;
             case ProtocolFlag::Flag_Verify: {

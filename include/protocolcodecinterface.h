@@ -17,9 +17,13 @@ public:
 
     QSharedPointer<ProtocolFlagData> readFlag(ProtocolFlag flag) override;
 
+    void setTypeByteSize(int size);
+
 protected:
     QSharedPointer<ProtocolFlagData> enumFlags[(int)ProtocolFlag::Flag_Max];
     QList<QSharedPointer<ProtocolFlagData>> protocolFlags;
+
+    int mTypeByteSize;
 
 protected:
     template<typename T>

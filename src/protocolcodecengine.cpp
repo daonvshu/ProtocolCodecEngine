@@ -20,6 +20,11 @@ void ProtocolCodecEngine::setVerifyFlags(const QString &flagStr) {
     encoder.setVerifyFlags(verifyFlags);
 }
 
+void ProtocolCodecEngine::setTypeEncodeByteSize(int size) {
+    decoder.setTypeByteSize(size);
+    encoder.setTypeByteSize(size);
+}
+
 void ProtocolCodecEngine::appendBuffer(const QByteArray &buffer) {
     decoder.addBuffer(buffer);
 }

@@ -10,6 +10,7 @@ PROTOCOL_CODEC_NAMESPACE_BEGIN
 
 ProtocolCodecInterface::ProtocolCodecInterface(QObject *parent)
     : QObject(parent)
+    , mTypeByteSize(2)
 {
 }
 
@@ -45,6 +46,10 @@ void ProtocolCodecInterface::setVerifyFlags(const QList<QSharedPointer<ProtocolF
 
 QSharedPointer<ProtocolFlagData> ProtocolCodecInterface::readFlag(ProtocolFlag flag) {
     return enumFlags[(int)flag];
+}
+
+void ProtocolCodecInterface::setTypeByteSize(int size) {
+    mTypeByteSize = size;
 }
 
 PROTOCOL_CODEC_NAMESPACE_END
