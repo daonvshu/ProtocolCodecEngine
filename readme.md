@@ -257,6 +257,8 @@ public:
         codecEngine.setVerifyFlags("SC");
         //注册类型
         codecEngine.registerType<CompressCodec<DataType4, BytesCodec>>(this, &TestClass::dataType4Callback);
+        //仅编码
+        codecEngine.registerCompressEncoder<DataType4, BytesCodec>();
     }
 
     void dataType4Callback(const DataType4& data) {
