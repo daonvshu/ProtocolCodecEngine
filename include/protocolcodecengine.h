@@ -66,6 +66,17 @@ public:
     }
 
     /**
+     * @brief 注册压缩编码器，只编码
+     * @tparam T
+     * @tparam Codec
+     */
+    template<typename T, template<typename> class Codec, int Level = -1>
+    void registerCompressEncoder() {
+        Q_ASSERT_X(encoder.getCodec(T::Type) == nullptr, "ProtocolCodecEngine::registerType", "Type already registered!");
+        encoder.addType(T::Type, new CompressCodec<T, Codec, Level>);
+    }
+
+    /**
      * @brief 注册类型，仅定义命令
      * @tparam I
      * @tparam T
