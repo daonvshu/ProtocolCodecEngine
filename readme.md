@@ -269,3 +269,24 @@ private:
     ProtocolCodecEngine codecEngine;
 }
 ```
+
+### 7. 自定义编解码器
+
+继承`ProtocolTypeCodec<T>`编解码基类可以实现自己的编解码逻辑：
+
+```cpp
+template<typename T>
+class MyCodec : public ProtocolTypeCodec<T> {
+public:
+    // 解码器按照帧协议格式解码成功会回调到该函数
+    T decode(const QByteArray &content) override {
+        // decode content bytes to type 'T'
+    }
+    
+    // 编码器编码对象内容时会调用该函数
+    QByteArray encode(const T &data) override {
+        // encode type 'T' data to bytes
+    }
+};
+
+```
