@@ -224,3 +224,46 @@ private:
     ProtocolCodecEngine codecEngine;
 }
 ```
+
+### 6. 数据压缩编码器
+
+如果在可预期的内容传输中字节数过多，可以使用数据压缩编码器`CompressCodec`，该编码器需要配合其他编码器一起使用：
+
+```cpp
+struct DataType4 {
+    enum {
+        Type = 4
+    };
+
+    QByteArray data;
+
+    static DataType4 fromBytes(const QByteArray& content) {
+        DataType4 data;
+        data.data = content;
+        return data;
+    }
+
+    QByteArray toBytes() const {
+        return data;
+    }
+};
+
+class TestClass {
+public:
+    void registerType() {
+        //定义协议帧格式
+        codecEngine.frameDeclare("H(5AFF)S4CV(CRC16)E(FE)");
+        //定义校验使用的标志符
+        codecEngine.setVerifyFlags("SC");
+        //注册类型
+        codecEngine.registerType<CompressCodec<DataType4, BytesCodec>>(this, &TestClass::dataType4Callback);
+    }
+
+    void dataType4Callback(const DataType4& data) {
+        qDebug() << "data4 callback size:" << data.data.size();
+    }
+
+private:
+    ProtocolCodecEngine codecEngine;
+}
+```
