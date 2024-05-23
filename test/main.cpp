@@ -34,21 +34,6 @@ struct DataType2 {
     };
 
     QString data;
-
-    static DataType2 fromJson(const QByteArray& content) {
-        DataType2 data;
-        QJsonDocument doc = QJsonDocument::fromJson(content);
-        if (!doc.isNull()) {
-            data.data = doc.object().value("d").toString();
-        }
-        return data;
-    }
-
-    QByteArray toJson() const {
-        QJsonObject obj;
-        obj.insert("d", data);
-        return QJsonDocument(obj).toJson();
-    }
 };
 
 inline QDataStream& operator<<(QDataStream& out, const DataType2& data) {

@@ -37,12 +37,14 @@ struct DataType1 {
 
     int data = -1;
 
+    //json数据解码
     static DataType1 fromJson(const QJsonDocument& doc) {
         DataType1 data;
         data.data = doc.object().value("d").toInt();
         return data;
     }
 
+    //json数据编码
     QJsonDocument toJson() const {
         QJsonObject obj;
         obj.insert("d", data);
@@ -82,28 +84,15 @@ struct DataType2 {
     };
 
     QString data;
-
-    static DataType2 fromJson(const QByteArray& content) {
-        DataType2 data;
-        QJsonDocument doc = QJsonDocument::fromJson(content);
-        if (data.data = doc.object().value("d").toString();
-        }
-        retur!doc.isNull()) {
-            n data;
-    }
-
-    QByteArray toJson() const {
-        QJsonObject obj;
-        obj.insert("d", data);
-        return QJsonDocument(obj).toJson();
-    }
 };
 
+//数据序列化
 inline QDataStream& operator<<(QDataStream& out, const DataType2& data) {
     out << data.data;
     return out;
 }
 
+//数据反序列化
 inline QDataStream& operator>>(QDataStream& in, DataType2& data) {
     in >> data.data;
     return in;
@@ -142,12 +131,14 @@ struct DataType3 {
 
     int data = 0;
 
+    //字节数组转对象成员
     static DataType3 fromBytes(const QByteArray& content) {
         DataType3 data;
         memcpy(&data.data, content.data(), 4);
         return data;
     }
 
+    //复制对象数据到字节数组
     QByteArray toBytes() const {
         char bytes[4];
         memcpy(bytes, (void*)&data, 4);
@@ -180,10 +171,10 @@ private:
 
 ### 3. 数据解析
 
-将QByteArray数据传递给`ProtocolCodecEngine`即可，会自动回调到`registerType`时的回调函数。
+将QByteArray数据传递给`ProtocolCodecEngine`即可，会自动回调到`registerType`时的回调函数。一般数据来源于串口、socket等等：
 
 ```cpp
-codecEngine.appendBuffer(bytes);
+codecEngine.appendBuffer(socket->readAll());
 ```
 
 ### 4. 数据编码
@@ -192,10 +183,10 @@ codecEngine.appendBuffer(bytes);
 
 ```cpp
 DataType1 data1{ 10 };
-auto bytes = codecEngine.encode(data1);
+socket->write(codecEngine.encode(data1));
 
 DataType2 data2{ "abcde" };
-bytes = codecEngine.encode(data2);
+socket->write(codecEngine.encode(data2));
 ```
 
 ### 5. 空消息内容编解码
