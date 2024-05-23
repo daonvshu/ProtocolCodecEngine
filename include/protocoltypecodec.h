@@ -67,4 +67,20 @@ public:
     }
 };
 
+template<typename T, template<typename> class Codec, int Level = -1>
+class CompressCodec : public ProtocolTypeCodec<T> {
+public:
+    T decode(const QByteArray &content) override {
+        auto tmp = qUncompress(content);
+        return codec.decode(tmp);
+    }
+
+    QByteArray encode(const T &data) override {
+        return qCompress(codec.encode(data), Level);
+    }
+
+private:
+    Codec<T> codec;
+};
+
 PROTOCOL_CODEC_NAMESPACE_END

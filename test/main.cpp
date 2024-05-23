@@ -4,6 +4,7 @@
 
 #include <qjsondocument.h>
 #include <qjsonobject.h>
+#include <qfile.h>
 
 PROTOCOL_CODEC_USING_NAMESPACE
 
@@ -80,15 +81,35 @@ struct DataType3 {
     }
 };
 
+struct DataType4 {
+    enum {
+        Type = 4
+    };
+
+    QByteArray data;
+
+    static DataType4 fromBytes(const QByteArray& content) {
+        DataType4 data;
+        data.data = content;
+        return data;
+    }
+
+    QByteArray toBytes() const {
+        return data;
+    }
+};
+
+
 class TestClass {
 public:
     void test() {
-        codecEngine.frameDeclare("H(5AFF)S2CV(CRC16)E(FE)");
+        codecEngine.frameDeclare("H(5AFF)S4CV(CRC16)E(FE)");
         codecEngine.setVerifyFlags("SC");
         codecEngine.setTypeEncodeByteSize(3);
         codecEngine.registerType<JsonCodec<DataType1>>(this, &TestClass::dataType1Callback);
         codecEngine.registerType<SerializeCodec<DataType2>>(this, &TestClass::dataType2Callback);
         codecEngine.registerType<BytesCodec<DataType3>>(this, &TestClass::dataType3Callback);
+        codecEngine.registerType<CompressCodec<DataType4, BytesCodec, 3>>(this, &TestClass::dataType4Callback);
         codecEngine.registerType<0x13>(this, &TestClass::dataType13Callback);
 
         DataType1 data1{ 10 };
@@ -112,6 +133,17 @@ public:
 
         bytes = codecEngine.encode<0x14>();
         codecEngine.appendBuffer(bytes);
+
+        DataType4 data4;
+        QFile file("protocol_codec_engine_test.pdb");
+        file.open(QIODevice::ReadOnly);
+        data4.data = file.readAll();
+        qDebug() << "data4 source file size:" << data4.data.size();
+        file.close();
+        bytes = codecEngine.encode(data4);
+        qDebug() << "data4 encode data size:" << bytes.size();
+        bytes.prepend("fawew").append("assfs");
+        codecEngine.appendBuffer(bytes);
     }
 
     void dataType1Callback(const DataType1& data) {
@@ -128,6 +160,10 @@ public:
 
     void dataType13Callback() {
         qDebug() << "data13 callback!";
+    }
+
+    void dataType4Callback(const DataType4& data) {
+        qDebug() << "data4 compress callback size:" << data.data.size();
     }
 
 private:

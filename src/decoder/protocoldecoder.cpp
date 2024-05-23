@@ -29,6 +29,10 @@ void ProtocolDecoder::addType(int type, const std::function<void(const QByteArra
     typeDecoders.insert(type, decoder);
 }
 
+bool ProtocolDecoder::checkRegistered(int type) const {
+    return typeDecoders.contains(type);
+}
+
 void ProtocolDecoder::addBuffer(const QByteArray &buffer) {
     bufferCache.append(buffer);
 

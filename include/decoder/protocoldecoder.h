@@ -16,6 +16,8 @@ public:
 
     void addType(int type, const std::function<void(const QByteArray&)>& decoder);
 
+    bool checkRegistered(int type) const;
+
     void addBuffer(const QByteArray& buffer);
 
 private:

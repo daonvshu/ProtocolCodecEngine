@@ -50,6 +50,7 @@ public:
         decoder.addType(T::Type, [context, callback] (const QByteArray& content) {
             (context->*callback)(Codec().decode(content));
         });
+        Q_ASSERT_X(encoder.getCodec(T::Type) == nullptr, "ProtocolCodecEngine::registerType", "Type already registered!");
         encoder.addType(T::Type, new Codec);
     }
 
@@ -60,6 +61,7 @@ public:
      */
     template<typename T, template<typename> class Codec>
     void registerType() {
+        Q_ASSERT_X(encoder.getCodec(T::Type) == nullptr, "ProtocolCodecEngine::registerType", "Type already registered!");
         encoder.addType(T::Type, new Codec<T>);
     }
 
@@ -72,6 +74,7 @@ public:
      */
     template<int I, typename T>
     void registerType(T* context, void(T::*callback)()) {
+        Q_ASSERT_X(!decoder.checkRegistered(I), "ProtocolCodecEngine::registerType", "Type already registered!");
         decoder.addType(I, [context, callback] (const QByteArray& content) {
             (context->*callback)();
         });
