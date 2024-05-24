@@ -42,6 +42,7 @@ void ProtocolDecoder::addBuffer(const QByteArray &buffer) {
 
     int decodedOffset = 0;
     int decodedBegin = 0;
+    int decodedFinish = 0;
 
     while (dataOffset < dataSize) {
         int frameOffset = dataOffset;
@@ -73,10 +74,11 @@ void ProtocolDecoder::addBuffer(const QByteArray &buffer) {
             } else {
                 decoder(content.mid(mTypeByteSize));
             }
+            decodedFinish = decodedBegin;
         }
     }
 
-    decodedOffset = qMax(decodedOffset, decodedBegin); //如果第一个子对象匹配成功，则移除前置垃圾数据
+    decodedOffset = qMax(decodedOffset, decodedFinish); //如果第一个子对象匹配成功，则移除前置垃圾数据
     if (decodedOffset != 0) {
         bufferCache = bufferCache.mid(decodedOffset);
     }
