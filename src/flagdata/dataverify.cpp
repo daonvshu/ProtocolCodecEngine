@@ -104,6 +104,9 @@ bool ProtocolFlagDataVerify::verify(char *data, int offset, int maxSize) {
         }
     }
 
+    if (verifyBegin < 0 || verifySize <= 0) {
+        return false;
+    }
     if (verifyCodePtr == nullptr) {
         return false;
     }

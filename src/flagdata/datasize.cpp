@@ -21,7 +21,7 @@ bool ProtocolFlagDataSize::verify(char *data, int offset, int maxSize) {
     for (int i = 0; i < byteSize; i++) {
         dataSize |= (data[offset + i] & 0xff) << (8 * i);
     }
-    return true;
+    return dataSize >= 0;
 }
 
 void ProtocolFlagDataSize::doFrameOffset(int &offset) {

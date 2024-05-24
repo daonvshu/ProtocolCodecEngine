@@ -18,6 +18,9 @@ QString ProtocolFlagDataEnd::dataToString() {
 
 bool ProtocolFlagDataEnd::verify(char *data, int offset, int maxSize) {
     auto endOffset = offset + mSizeFlag->dataSize + mVerifyFlag->byteSize;
+    if (endOffset <= offset) {
+        return false;
+    }
     if (endOffset + target.size() > maxSize) {
         return false;
     }
