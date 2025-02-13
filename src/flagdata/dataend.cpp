@@ -4,10 +4,10 @@
 #include "flagdata/dataverify.h"
 
 #include "protocolexception.h"
+#include "flagdata/datacontent.h"
 
 PROTOCOL_CODEC_NAMESPACE_BEGIN
-
-ProtocolFlagDataEnd::ProtocolFlagDataEnd(QByteArray data)
+    ProtocolFlagDataEnd::ProtocolFlagDataEnd(QByteArray data)
     : ProtocolFlagData(ProtocolFlag::Flag_End)
     , target(std::move(data))
 {}
@@ -17,7 +17,15 @@ QString ProtocolFlagDataEnd::dataToString() {
 }
 
 bool ProtocolFlagDataEnd::verify(char *data, int offset, int maxSize) {
-    auto endOffset = offset + mSizeFlag->dataSize + mVerifyFlag->byteSize;
+    auto endOffset = offset;
+    if (!mSizeFlag.isNull()) {
+        endOffset += mSizeFlag->dataSize;
+    } else {
+        endOffset += mContentFlag->byteSize;
+    }
+    if (!mVerifyFlag.isNull()) {
+        endOffset += mVerifyFlag->byteSize;
+    }
     if (endOffset <= offset) {
         return false;
     }
@@ -31,12 +39,14 @@ void ProtocolFlagDataEnd::doFrameOffset(int &offset) {
 }
 
 void ProtocolFlagDataEnd::setDependentFlag(const QSharedPointer<ProtocolFlagDataSize> &sizeFlag,
+                                           const QSharedPointer<ProtocolFlagDataContent>& contentFlag,
                                            const QSharedPointer<ProtocolFlagDataVerify> &verifyFlag)
 {
     mSizeFlag = sizeFlag;
+    mContentFlag = contentFlag;
     mVerifyFlag = verifyFlag;
-    if (mSizeFlag.isNull() || mVerifyFlag.isNull()) {
-        throw ProtocolException("frame end decode require 'size' and 'verify'!");
+    if (mSizeFlag.isNull() && mContentFlag.isNull()) {
+        throw ProtocolException("frame end decode require 'size' and 'content' byte size!");
     }
 }
 

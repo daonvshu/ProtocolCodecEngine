@@ -26,7 +26,9 @@ void ProtocolCodecInterface::setFlags(const QList<QSharedPointer<ProtocolFlagDat
 
     auto flagEnd = get<ProtocolFlagDataEnd>(ProtocolFlag::Flag_End);
     if (flagEnd) {
-        flagEnd->setDependentFlag(get<ProtocolFlagDataSize>(ProtocolFlag::Flag_Size), get<ProtocolFlagDataVerify>(ProtocolFlag::Flag_Verify));
+        flagEnd->setDependentFlag(get<ProtocolFlagDataSize>(ProtocolFlag::Flag_Size),
+                                  get<ProtocolFlagDataContent>(ProtocolFlag::Flag_Content),
+                                  get<ProtocolFlagDataVerify>(ProtocolFlag::Flag_Verify));
     }
 
     auto flagContent = get<ProtocolFlagDataContent>(ProtocolFlag::Flag_Content);

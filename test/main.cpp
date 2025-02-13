@@ -88,7 +88,7 @@ struct DataType4 {
 class TestClass {
 public:
     void test() {
-        codecEngine.frameDeclare("H(5AFF)S4CV(CRC16)E(FE)");
+        codecEngine.frameDeclare("H(5AFF)S4CE(FE)");
         codecEngine.setVerifyFlags("SC");
         codecEngine.setTypeEncodeByteSize(3);
         codecEngine.registerType<JsonCodec<DataType1>>(this, &TestClass::dataType1Callback);

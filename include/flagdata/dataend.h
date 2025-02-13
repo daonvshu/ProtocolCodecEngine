@@ -9,6 +9,7 @@ PROTOCOL_CODEC_NAMESPACE_BEGIN
 
 class ProtocolFlagDataSize;
 class ProtocolFlagDataVerify;
+class ProtocolFlagDataContent;
 
 class ProtocolFlagDataEnd : public ProtocolFlagData {
 public:
@@ -21,6 +22,7 @@ public:
     void doFrameOffset(int &offset) override;
 
     void setDependentFlag(const QSharedPointer<ProtocolFlagDataSize>& sizeFlag,
+                          const QSharedPointer<ProtocolFlagDataContent>& contentFlag,
                           const QSharedPointer<ProtocolFlagDataVerify>& verifyFlag);
 
     QSharedPointer<ProtocolFlagData> copy() const override;
@@ -30,6 +32,7 @@ public:
 
 private:
     QSharedPointer<ProtocolFlagDataSize> mSizeFlag;
+    QSharedPointer<ProtocolFlagDataContent> mContentFlag;
     QSharedPointer<ProtocolFlagDataVerify> mVerifyFlag;
 };
 

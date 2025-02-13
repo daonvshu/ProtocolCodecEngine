@@ -28,7 +28,11 @@ QList<QSharedPointer<ProtocolFlagData>> ProtocolTemplateDecoder::parse(const QSt
             }
             data.append(QSharedPointer<ProtocolFlagDataSize>::create(segment.data.toInt()));
         } else if (segment.type == "C") {
-            data.append(QSharedPointer<ProtocolFlagDataContent>::create());
+            if (segment.data.isEmpty()) {
+                data.append(QSharedPointer<ProtocolFlagDataContent>::create());
+            } else {
+                data.append(QSharedPointer<ProtocolFlagDataContent>::create(segment.data.toInt()));
+            }
         } else if (segment.type == "V") {
             if (contentRequired) {
                 if (segment.data.toUpper() == "CRC16") {

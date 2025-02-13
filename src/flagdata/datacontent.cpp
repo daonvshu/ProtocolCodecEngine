@@ -8,16 +8,35 @@ PROTOCOL_CODEC_NAMESPACE_BEGIN
 
 ProtocolFlagDataContent::ProtocolFlagDataContent()
     : ProtocolFlagData(ProtocolFlag::Flag_Content)
+    , byteSize(0)
+{}
+
+ProtocolFlagDataContent::ProtocolFlagDataContent(int byteSize)
+    : ProtocolFlagData(ProtocolFlag::Flag_Content)
+    , byteSize(byteSize)
 {}
 
 bool ProtocolFlagDataContent::verify(char *data, int offset, int maxSize) {
-    contentData = QByteArray(data + offset, mSizeFlag->dataSize);
+    if (!mSizeFlag.isNull()) {
+        contentData = QByteArray(data + offset, mSizeFlag->dataSize);
+    } else {
+        if (byteSize <= 0) {
+            return false;
+        }
+        contentData = QByteArray(data + offset, byteSize);
+    }
     return true;
 }
 
 void ProtocolFlagDataContent::doFrameOffset(int &offset) {
-    offset += mSizeFlag->dataSize;
-    offset += mVerifyFlag->byteSize;
+    if (!mSizeFlag.isNull()) {
+        offset += mSizeFlag->dataSize;
+    } else {
+        offset += byteSize;
+    }
+    if (!mVerifyFlag.isNull()) {
+        offset += mVerifyFlag->byteSize;
+    }
     if (!mEndFlag.isNull()) {
         offset += mEndFlag->target.size();
     }
@@ -35,6 +54,7 @@ void ProtocolFlagDataContent::setDependentFlag(const QSharedPointer<ProtocolFlag
 QSharedPointer<ProtocolFlagData> ProtocolFlagDataContent::copy() const  {
     auto newFlag = QSharedPointer<ProtocolFlagDataContent>::create();
     newFlag->contentData = contentData;
+    newFlag->byteSize = byteSize;
     return newFlag;
 }
 

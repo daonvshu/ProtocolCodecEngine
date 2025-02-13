@@ -13,7 +13,8 @@ class ProtocolFlagDataEnd;
 
 class ProtocolFlagDataContent : public ProtocolFlagData {
 public:
-    explicit ProtocolFlagDataContent();
+    ProtocolFlagDataContent();
+    explicit ProtocolFlagDataContent(int byteSize);
 
     bool verify(char *data, int offset, int maxSize) override;
 
@@ -27,6 +28,7 @@ public:
 
 public:
     QByteArray contentData;
+    int byteSize;
 
 private:
     QSharedPointer<ProtocolFlagDataSize> mSizeFlag;
