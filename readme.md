@@ -75,6 +75,39 @@ private:
 }
 ```
 
+使用[QDataUtil](https://github.com/daonvshu/qjsonutil)能够简化json的转换：
+
+```cpp
+
+template<typename T>
+struct DataDumpProtocol : DataDumpInterface {
+    //json数据解码
+    static T fromJson(const QJsonDocument& doc) {
+        T data;
+        auto obj = doc.object();
+        data.DataDumpInterface::fromJson(obj);
+        return data;
+    }
+
+    //json数据编码
+    QJsonDocument toJson() const {
+        return QJsonDocument(this->dumpToJson());
+    }
+};
+
+struct DataType1 : DataDumpProtocol<DataType1> {
+    enum {
+        Type = 1 //必须设置，用于区分数据类型
+    };
+
+    DATA_KEY(int, data);
+    
+    QList<DataReadInterface *> prop() override {
+        return { &data };
+    }
+};
+```
+
 - 序列化编码器：`SerializeCodec<T>`
 
 ```cpp
@@ -282,6 +315,38 @@ public:
 
 ```
 
-## 未解决的问题
+## 解码优化
 
-- 解析缓存无限制：当一直接收垃圾数据时，会在`decoder`内部一直缓存下来，直到解析到一个完整帧才会删除之前的
+下面提出的几个解码优化方案并非强制性的，在高速数据传输的场景中，能够提升解码性能。
+
+### 1. 设置帧尾
+
+解码器按照 `帧头->帧尾->数据长度->校验` 的过程验证是否是有效帧，如果设置了帧尾，能够提前终止验证。
+
+### 2. 设置帧长度最大值
+
+这里帧长度指的是内容长度，即`S`标志符的最大值，如果能预期知道所有帧中最大帧的内容长度+类型字节数，那么设置最大值能够提前终止验证避免校验垃圾数据，造成时间上的浪费。**设置最大值需要额外小心，否则会造成数据丢失**，使用`setSizeMaxValue`函数设置最大值：
+
+```cpp
+codecEngine.setSizeMaxValue(sizeof(MyMaxFrameData)+2);
+```
+
+### 3. 设置帧缓存最大值
+
+在断帧的情况下，解码器会缓存当前数据，下一段数据到来时重新验证是否存在有效帧。如果能够确定最大帧长度，那么理论上解码窗口不会超过最大帧长度，这样能够提前清理垃圾数据。默认情况下缓存窗口的大小是10M，合理设置缓存大小能够防止垃圾数据过多导致内存爆炸，特别是攻击者有意发送大量垃圾数据的情况。**同样的设置缓存大小需要额外小心，否则会造成丢帧**，使用`setBufferMaxSize`来设置缓存最大值，这里最大值表示编码后的帧最大值，除了最大帧内容长度，还需要包含帧头、大小、校验等等字节数，如果不能明确字节数，可以设置一个固定的预期最大值：
+
+```cpp
+codecEngine.setBufferMaxSize(sizeof(MyMaxFrameData)+9);
+```
+
+### 4. 设置解码超时时间
+
+发生断帧时，如果对方在超时时间内还没有发送数据，那么解码器认为当前帧已经发送完成，剩余的缓存为垃圾数据，需要清理。**如果使用了超时时间，需要注意由于解码回调函数是同步调用，函数中需要尽快处理数据，发生阻塞时可能会触发超时机制造成丢帧**，使用`setDecodeTimeout`设置解码超时时间(ms):
+
+```cpp
+codecEngine.setDecodeTimeout(20);
+```
+
+### 5. 使用字节编码器
+
+如果是能否确定大小的基本数据类型，使用字节编码器配合`memcpy`函数能够加快编解码内容的时间，如果帧结构体非常大的情况下，配合压缩编码器能够有效的降低传输的数据量大小。
