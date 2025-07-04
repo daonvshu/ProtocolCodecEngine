@@ -8,7 +8,7 @@
 
 #include <qdatetime.h>
 
-#define DECODE_LOCAL_DEBUG
+//#define DECODE_LOCAL_DEBUG
 #ifdef DECODE_LOCAL_DEBUG
 #include <qdebug.h>
 #include <qelapsedtimer.h>
