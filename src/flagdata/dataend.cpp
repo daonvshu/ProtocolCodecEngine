@@ -32,7 +32,12 @@ bool ProtocolFlagDataEnd::verify(char *data, int offset, int maxSize) {
     if (endOffset + target.size() > maxSize) {
         return false;
     }
-    return QByteArray(data + endOffset, target.size()) == target;
+    for (int i = 0; i < target.size(); i++) {
+        if (data[i + endOffset] != target[i]) {
+            return false;
+        }
+    }
+    return true;
 }
 
 void ProtocolFlagDataEnd::doFrameOffset(int &offset) {
