@@ -38,12 +38,29 @@ public:
     void setTypeEncodeByteSize(int size);
 
     /**
+     * @brief 设置帧长度字节最大值
+     * @param value
+     */
+    void setSizeMaxValue(int value);
+
+    /**
+     * @brief 设置帧缓存最大值
+     * @param size
+     */
+    void setBufferMaxSize(int size);
+
+    /**
+     * @brief 设置断帧解析超时时间，超时后将清理缓存
+     * @param ms
+     */
+    void setDecodeTimeout(int ms);
+
+    /**
      * @brief 注册类型和解析回调
      * @tparam T 类型
      * @tparam K 回调类类型
      * @param context
      * @param callback
-     * @param codec 编码器
      */
     template<typename Codec, typename T, typename K>
     void registerType(K* context, void(K::*callback)(const T& t)) {

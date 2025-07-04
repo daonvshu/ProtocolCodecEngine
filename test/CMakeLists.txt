@@ -10,6 +10,9 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS
     Core
     Gui
     Widgets)
+find_package(QLogCollectorServer REQUIRED)
+
+add_compile_definitions(ROOT_PROJECT_PATH="${CMAKE_SOURCE_DIR}")
 
 add_executable(${PROJECT_NAME} WIN32
     main.cpp
@@ -21,4 +24,5 @@ target_link_libraries(${PROJECT_NAME}
     Qt${QT_VERSION_MAJOR}::Widgets
 
     protocol_codec_engine
+    qlogcollectorserver
 )

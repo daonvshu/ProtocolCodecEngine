@@ -7,11 +7,13 @@ PROTOCOL_CODEC_NAMESPACE_BEGIN
 class ProtocolFlagData;
 class ProtocolFlagReaderInterface {
 public:
+    virtual ~ProtocolFlagReaderInterface() = default;
     virtual QSharedPointer<ProtocolFlagData> readFlag(ProtocolFlag flag) = 0;
 };
 
 class ProtocolFlagData {
 public:
+    virtual ~ProtocolFlagData() = default;
     explicit ProtocolFlagData(ProtocolFlag flag);
 
     virtual QString dataToString();

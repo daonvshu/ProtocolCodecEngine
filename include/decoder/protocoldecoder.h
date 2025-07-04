@@ -10,7 +10,7 @@ PROTOCOL_CODEC_NAMESPACE_BEGIN
 
 class ProtocolDecoder : public ProtocolCodecInterface {
 public:
-    using ProtocolCodecInterface::ProtocolCodecInterface;
+    explicit ProtocolDecoder(QObject *parent = nullptr);
 
     void setFlags(const QList<QSharedPointer<ProtocolFlagData>>& flags) override;
 
@@ -20,10 +20,24 @@ public:
 
     void addBuffer(const QByteArray& buffer);
 
+    void setBufferMaxSize(int size);
+
+    void setSizeMaxValue(int value);
+
+    void setDecodeTimeout(int ms);
+
 private:
     QHash<int, std::function<void(const QByteArray&)>> typeDecoders;
 
+    ProtocolFlagData* decodeFlags[256] = { nullptr };
+    int flagCount;
+
     QByteArray bufferCache;
+
+    int mBufferMaxSize;
+    int mDecodeTimeout;
+    QList<int> validHeaderPos;
+    qint64 lastDecodeTimestamp;
 };
 
 PROTOCOL_CODEC_NAMESPACE_END

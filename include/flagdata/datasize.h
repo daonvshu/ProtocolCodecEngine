@@ -19,9 +19,12 @@ public:
 
     QSharedPointer<ProtocolFlagData> copy() const override;
 
+    void setSizeMaxValue(int value);
+
 public:
     int byteSize;
     int dataSize;
+    int sizeValueMax;
 };
 
 PROTOCOL_CODEC_NAMESPACE_END

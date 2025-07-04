@@ -25,6 +25,18 @@ void ProtocolCodecEngine::setTypeEncodeByteSize(int size) {
     encoder.setTypeByteSize(size);
 }
 
+void ProtocolCodecEngine::setSizeMaxValue(int value) {
+    decoder.setSizeMaxValue(value);
+}
+
+void ProtocolCodecEngine::setBufferMaxSize(int size) {
+    decoder.setBufferMaxSize(size);
+}
+
+void ProtocolCodecEngine::setDecodeTimeout(int ms) {
+    decoder.setDecodeTimeout(ms);
+}
+
 void ProtocolCodecEngine::appendBuffer(const QByteArray &buffer) {
     decoder.addBuffer(buffer);
 }

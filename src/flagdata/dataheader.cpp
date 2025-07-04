@@ -15,7 +15,12 @@ bool ProtocolFlagDataHeader::verify(char *data, int offset, int maxSize) {
     if (offset + target.size() > maxSize) {
         return false;
     }
-    return QByteArray(data + offset, target.size()) == target;
+    for (int i = 0; i < target.size(); i++) {
+        if (data[i + offset] != target[i]) {
+            return false;
+        }
+    }
+    return true;
 }
 
 void ProtocolFlagDataHeader::doFrameOffset(int &offset) {

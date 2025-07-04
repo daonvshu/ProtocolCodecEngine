@@ -1,3 +1,5 @@
+#include <iostream>
+#include <ostream>
 #include <QCoreApplication>
 
 #include "protocolcodecengine.h"
@@ -5,6 +7,8 @@
 #include <qjsondocument.h>
 #include <qjsonobject.h>
 #include <qfile.h>
+#include <qelapsedtimer.h>
+#include <qlogcollector.h>
 
 PROTOCOL_CODEC_USING_NAMESPACE
 
@@ -155,11 +159,118 @@ private:
     ProtocolCodecEngine codecEngine;
 };
 
+struct AdcData {
+    char adc[12];
+    uint32_t turbine;
+
+    AdcData() {
+        char test = '1';
+        memcpy(adc, &test, 12);
+        turbine = 20;
+    }
+    QList<uint32_t> showData() const {
+        QList<uint32_t> res;
+        for(int i = 0; i < 4; i++) {
+            uint32_t data = 0u;
+            memcpy(&data, adc + i * 3, 3);
+            res.append(data);
+        }
+        return res;
+    }
+
+    QString toHex() const {
+        QByteArray res;
+        res.append(adc, 12);
+        res.append(QByteArray(reinterpret_cast<const char*>(&turbine), sizeof(turbine)));
+        return res.toHex(' ');
+    }
+    //
+    //    AdcData& swapBytes() {
+    //        auto* dataPtr = reinterpret_cast<const char*>(this);
+    //        QByteArray rawData(dataPtr, sizeof(AdcData));
+    //        for(auto iter = rawData.begin(); iter != rawData.end(); iter += 4) {
+    //            std::reverse(iter, iter + 4);
+    //        }
+    //        return *this;
+    //    }
+};
+
+struct FrameData {
+    enum {
+        Type = 0
+    };
+
+    AdcData data[2048];
+
+    QByteArray toBytes() const {
+        return QByteArray((char*)data, 2048 * sizeof(AdcData));
+    }
+
+    static FrameData fromBytes(const QByteArray& data) {
+        FrameData res{};
+        memcpy(&res, data.data(), data.size());
+        return res;
+    }
+
+    void toHex() const {
+        for(int i = 0; i< 2048; i++) {
+            qDebug() << i << " " << data[i].toHex();
+        }
+    }
+
+    //    FrameData& swapAdcData() {
+    //        for(auto& d : data) {
+    //            d.swapBytes();
+    //        }
+    //        return *this;
+    //    }
+};
+
+class TestClass2 {
+public:
+    void test() {
+        codecEngine.frameDeclare("H(5AFF)S2CV(SUM16)E(FE)");
+        codecEngine.setVerifyFlags("SC");
+        codecEngine.registerType<BytesCodec<FrameData>>(this, &TestClass2::callbackFunc);
+        codecEngine.setBufferMaxSize(sizeof(FrameData) + 9);
+        codecEngine.setSizeMaxValue(sizeof(FrameData) + 2);
+        codecEngine.setDecodeTimeout(10);
+
+        QFile file("1.bin");
+        file.open(QIODevice::ReadOnly);
+
+        QElapsedTimer timer;
+        timer.start();
+        while (!file.atEnd()) {
+            auto data = file.read(102400);
+            codecEngine.appendBuffer(data);
+        }
+        std::cout << "decode used time:" << timer.elapsed() << " decoded object size:" << objSize << std::endl;
+        file.close();
+    }
+
+    void callbackFunc(const FrameData& data) {
+        objSize++;
+    }
+
+private:
+    ProtocolCodecEngine codecEngine;
+    int objSize = 0;
+};
+
 int main(int argc, char* argv[]) {
     QCoreApplication a(argc, argv);
 
-    TestClass testClass;
+    logcollector::styleConfig
+            .consoleApp()
+            .ide_clion(false)
+            .wordWrap(360)
+            .projectSourceCodeRootPath(ROOT_PROJECT_PATH)
+            ;
+    logcollector::QLogCollector::instance().registerLog();
+
+    TestClass2 testClass;
     testClass.test();
 
-    return a.exec();
+    return 0;
 }
