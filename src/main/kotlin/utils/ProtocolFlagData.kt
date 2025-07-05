@@ -6,7 +6,7 @@ interface ProtocolFlagData {
 
     val flagType: ProtocolFlag
 
-    fun verify(data: ByteArray, offset: Int, maxSize: Int)
+    fun verify(data: ByteArray, offset: Int, maxSize: Int): Boolean
 
     fun doFrameOffset(offset: Int): Int
 }

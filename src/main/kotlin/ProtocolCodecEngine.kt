@@ -5,14 +5,17 @@ import com.daonvshu.protocol.codec.annotations.Type
 import com.daonvshu.protocol.codec.codec.ProtocolDecoder
 import com.daonvshu.protocol.codec.codec.ProtocolEncoder
 import com.daonvshu.protocol.codec.utils.ProtocolTemplateDecoder
-import java.lang.reflect.Method
+import kotlin.reflect.KClass
+import kotlin.reflect.KFunction
+import kotlin.reflect.full.declaredFunctions
+import kotlin.reflect.full.findAnnotation
 
 class ProtocolCodecEngine {
 
     val decoder = ProtocolDecoder()
-    private val encoder = ProtocolEncoder()
+    val encoder = ProtocolEncoder()
 
-    private lateinit var context: Class<*>
+    lateinit var context: Any
 
     fun frameDeclare(templateStr: String) {
         val flags = ProtocolTemplateDecoder.parse(templateStr)
@@ -21,66 +24,106 @@ class ProtocolCodecEngine {
     }
 
     fun setVerifyFlags(flagStr: String) {
-        val flags = ProtocolTemplateDecoder.parse(flagStr)
+        val flags = ProtocolTemplateDecoder.parse(flagStr, false)
         decoder.setVerifyFlags(flags)
         encoder.setVerifyFlags(flags)
     }
 
     fun setTypeEncodeByteSize(size: Int) {
-
+        decoder.typeByteSize = size
+        encoder.typeByteSize = size
     }
 
     fun setSizeMaxValue(value: Int) {
-
+        decoder.setSizeMaxValue(value)
     }
 
     fun setBufferMaxSize(size: Int) {
-
+        decoder.bufferMaxSize = size
     }
 
     fun setDecodeTimeout(ms: Int) {
-
+        decoder.decodeTimeout = ms
     }
 
-    fun registerCallback(context: Class<*>) {
+    fun registerCallback(context: Any) {
         this.context = context
     }
 
-    inline fun<reified T> registerType() {
-        val kClass = T::class
-        val typeAnnotation = kClass.annotations.firstOrNull { it is Type } as? Type
+    fun appendBuffer(buffer: ByteArray) {
+        decoder.addBuffer(buffer)
+    }
+
+    inline fun<reified T : Any> registerType() {
+        val kClass: KClass<T> = T::class
+        val typeAnnotation = kClass.annotations.filterIsInstance<Type>().firstOrNull()
         if (typeAnnotation == null) {
             throw IllegalArgumentException("Class ${kClass.simpleName} must be annotated with @Type!")
         }
-        val codec: ProtocolTypeCodec<out Any?> = when(typeAnnotation.codec) {
-            CodecType.JSON -> JsonCodec(kClass.java)
-            CodecType.Bytes -> BytesCodec(kClass.java)
+        val codec = when(typeAnnotation.codec) {
+            CodecType.JSON -> JsonCodec(kClass)
+            CodecType.Bytes -> BytesCodec(kClass)
         }
-        decoder.typeDecoders[typeAnnotation.value] = {
-            val data = codec.decode(it)
-            val method = findMethodByType(T::class.java)
-            method.invoke(data)
+        val callback = findMethodByType(T::class)
+        decoder.typeDecoders[typeAnnotation.id] = { content ->
+            val data = codec.decode(content)
+            callback.call(context, data)
+        }
+        encoder.typeEncoders[typeAnnotation.id] = { data ->
+            codec.encode(data as T)
         }
     }
 
-    fun appendBuffer(buffer: ByteArray) {
-
+    fun registerType(id: Int) {
+        val callback = findMethodByType(id)
+        decoder.typeDecoders[id] = { content ->
+            callback.call(context)
+        }
     }
 
-    fun<T> findMethodByType(clazz: Class<T>): Method {
+    inline fun<reified T: Any> encode(data: Any): ByteArray {
+        val kClass: KClass<T> = T::class
+        val typeAnnotation = kClass.annotations.filterIsInstance<Type>().firstOrNull()
+        if (typeAnnotation == null) {
+            throw IllegalArgumentException("Class ${kClass.simpleName} must be annotated with @Type!")
+        }
+        val contentEncoder = encoder.typeEncoders[typeAnnotation.id]
+        val content = contentEncoder?.invoke(data)
+            ?: throw IllegalArgumentException("Can not find encoder for ${kClass.simpleName}")
+        return encoder.encodeFrame(content, typeAnnotation.id)
+    }
+
+    fun encode(id: Int): ByteArray {
+        return encoder.encodeFrame(ByteArray(0), id)
+    }
+
+    fun findMethodByType(clazz: KClass<*>): KFunction<*> {
         if (!::context.isInitialized) {
             throw IllegalStateException("Context is not register!")
         }
-        context.methods.forEach { method ->
-            val annotation = method.getAnnotation(Subscribe::class.java)
+        context::class.declaredFunctions.forEach { method ->
+            val annotation = method.findAnnotation<Subscribe>()
             if (annotation != null) {
                 method.parameters.forEach { parameter ->
-                    if (parameter.type == clazz) {
+                    if (parameter.type.classifier == clazz) {
                         return method
                     }
                 }
             }
         }
         throw IllegalArgumentException("Can not find subscribe method for $clazz with param type: ${clazz.simpleName}")
+    }
+
+    fun findMethodByType(id: Int): KFunction<*> {
+        if (!::context.isInitialized) {
+            throw IllegalStateException("Context is not register!")
+        }
+        context::class.declaredFunctions.forEach { method ->
+            val annotation = method.findAnnotation<Subscribe>()
+            if (annotation?.id == id) {
+                return method
+            }
+        }
+        throw IllegalArgumentException("Can not find subscribe method for id: $id")
     }
 }

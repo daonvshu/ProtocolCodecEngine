@@ -1,6 +1,9 @@
 package com.daonvshu.protocol.codec
 
 import com.google.gson.Gson
+import kotlin.reflect.KClass
+import kotlin.reflect.full.createInstance
+import kotlin.reflect.full.isSubclassOf
 
 enum class CodecType {
     JSON,
@@ -12,16 +15,17 @@ interface ProtocolTypeCodec<T> {
     fun encode(content: T): ByteArray
 }
 
-class JsonCodec<T>(private val clazz: Class<T>) : ProtocolTypeCodec<T> {
+class JsonCodec<T: Any>(private val clazz: KClass<T>) : ProtocolTypeCodec<T> {
 
     private val json = Gson()
 
     override fun decode(content: ByteArray): T {
-        return json.fromJson<T>(content.toString(), clazz.javaClass)
+        val jsonStr = content.toString(Charsets.UTF_8)  // 使用 UTF-8 解码字节
+        return json.fromJson(jsonStr, clazz.java)
     }
 
     override fun encode(content: T): ByteArray {
-        return json.toJson(content).toByteArray()
+        return json.toJson(content).toByteArray(Charsets.UTF_8)
     }
 }
 
@@ -30,18 +34,23 @@ interface IBytesCodec {
     fun toBytes(): ByteArray
 }
 
-class BytesCodec<T>(private val clazz: Class<T>) : ProtocolTypeCodec<T> {
-    override fun decode(content: ByteArray): T {
-        if (clazz.javaClass != (IBytesCodec::class as Any).javaClass) {
+class BytesCodec<T: Any>(private val clazz: KClass<T>) : ProtocolTypeCodec<T> {
+    private fun checkValid() {
+        if (!clazz.isSubclassOf(IBytesCodec::class)) {
             throw IllegalArgumentException("Class ${clazz.simpleName} must implement IBytesCodec!")
         }
-        return clazz.getDeclaredConstructor().newInstance().apply { (this as IBytesCodec).fromBytes(content) }
+    }
+
+    override fun decode(content: ByteArray): T {
+        checkValid()
+        // 反射创建实例（clazz 需有无参构造）
+        val instance = clazz.createInstance()
+        (instance as IBytesCodec).fromBytes(content)
+        return instance
     }
 
     override fun encode(content: T): ByteArray {
-        if (clazz.javaClass != (IBytesCodec::class as Any).javaClass) {
-            throw IllegalArgumentException("Class ${clazz.simpleName} must implement IBytesCodec!")
-        }
+        checkValid()
         return (content as IBytesCodec).toBytes()
     }
 }

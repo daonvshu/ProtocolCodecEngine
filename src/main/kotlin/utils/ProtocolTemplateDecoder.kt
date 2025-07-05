@@ -27,13 +27,13 @@ object ProtocolTemplateDecoder {
                     if (contentRequired && segment.data.isEmpty()) {
                         throw ProtocolException("size required content!")
                     }
-                    data.add(ProtocolFlagDataSize(segment.data.toString().toInt()))
+                    data.add(ProtocolFlagDataSize(segment.data.toString().toIntOrNull() ?: 0))
                 }
                 'C' -> {
                     if (segment.data.isEmpty()) {
                         data.add(ProtocolFlagDataContent())
                     } else {
-                        data.add(ProtocolFlagDataContent(segment.data.toString().toInt()))
+                        data.add(ProtocolFlagDataContent(segment.data.toString().toIntOrNull() ?: 0))
                     }
                 }
                 'V' -> {
@@ -121,6 +121,9 @@ object ProtocolTemplateDecoder {
     }
 
     private fun hexStringToByteArray(s: String): ByteArray {
+        if (s.isEmpty()) {
+            return ByteArray(0)
+        }
         val cleanString = s.replace("\\s".toRegex(), "")
         if (cleanString.length % 2 != 0) {
             throw ProtocolException("Invalid hex string length")

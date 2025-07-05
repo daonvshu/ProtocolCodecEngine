@@ -11,6 +11,8 @@ abstract class ProtocolCodec {
     protected val flags = mutableListOf<ProtocolFlagData>()
     protected val flagMap = arrayOfNulls<ProtocolFlagData?>(ProtocolFlag.FlagMax.ordinal)
 
+    var typeByteSize = 2
+
     open fun setFlags(flagList: List<ProtocolFlagData>) {
         flags.clear()
         flags.addAll(flagList)
@@ -36,7 +38,9 @@ abstract class ProtocolCodec {
 
     fun setVerifyFlags(flags: List<ProtocolFlagData?>) {
         val flagVerify = get<ProtocolFlagDataVerify>(ProtocolFlag.FlagVerify)
-        flagVerify?.setVerifyFlags(flags)
+        flagVerify?.setVerifyFlags(flags.map { 
+            get<ProtocolFlagData>(it?.flagType!!)
+        })
     }
 
     protected inline fun <reified T : ProtocolFlagData> get(flagType: ProtocolFlag): T? {
