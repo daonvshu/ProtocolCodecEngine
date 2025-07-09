@@ -16,7 +16,7 @@ public:
     ProtocolFlagDataContent();
     explicit ProtocolFlagDataContent(int byteSize);
 
-    bool verify(char *data, int offset, int maxSize) override;
+    bool verify(char *data, int offset, int maxSize, const QLoggingCategory& (*debugPtr)()) override;
 
     void doFrameOffset(int &offset) override;
 

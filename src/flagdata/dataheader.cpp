@@ -11,7 +11,7 @@ QString ProtocolFlagDataHeader::dataToString() {
     return target.toHex(' ');
 }
 
-bool ProtocolFlagDataHeader::verify(char *data, int offset, int maxSize) {
+bool ProtocolFlagDataHeader::verify(char *data, int offset, int maxSize, const QLoggingCategory& (*debugPtr)()) {
     if (offset + target.size() > maxSize) {
         return false;
     }

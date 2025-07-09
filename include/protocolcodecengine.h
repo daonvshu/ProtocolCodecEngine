@@ -56,6 +56,12 @@ public:
     void setDecodeTimeout(int ms);
 
     /**
+     * @brief 设置日志筛选器
+     * @param categoryPtr
+     */
+    void setLogging(LoggingCategoryPtr categoryPtr);
+
+    /**
      * @brief 注册类型和解析回调
      * @tparam T 类型
      * @tparam K 回调类类型

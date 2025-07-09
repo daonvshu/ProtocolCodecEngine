@@ -62,6 +62,11 @@ void ProtocolDecoder::addBuffer(const QByteArray &buffer) {
     if (mDecodeTimeout > 0) {
         auto cur = QDateTime::currentMSecsSinceEpoch();
         if (cur - lastDecodeTimestamp > mDecodeTimeout) {
+            if (!bufferCache.isEmpty()) {
+                printWarning([] {
+                    return "decode timeout, clear buffer cache...";
+                });
+            }
             bufferCache.clear();
             validHeaderPos.clear();
         }
@@ -82,13 +87,9 @@ void ProtocolDecoder::addBuffer(const QByteArray &buffer) {
     qDebug() << "decode buffer begin, current buffer size:" << bufferCache.size();
 #endif
 
-    int loopSize = 0;
-    int headerFindSize = 0;
-
     int lastCheckHeaderIndex = 0;
     int maxCheckHeaderSize = validHeaderPos.size();
     while (dataOffset < dataSize) {
-        loopSize++;
         if (lastCheckHeaderIndex < maxCheckHeaderSize) {
             dataOffset = validHeaderPos[lastCheckHeaderIndex++];
         }
@@ -96,11 +97,10 @@ void ProtocolDecoder::addBuffer(const QByteArray &buffer) {
         bool frameDecodeSuccess = true;
         for (int i = 0; i < flagCount; i++) {
             auto flag = decodeFlags[i];
-            bool segmentValid = flag->verify(data, frameOffset, dataSize);
+            bool segmentValid = flag->verify(data, frameOffset, dataSize, debugPtr);
             if (segmentValid) {
                 flag->doFrameOffset(frameOffset);
                 if (flag->flag == ProtocolFlag::Flag_Header) {
-                    headerFindSize++;
                     validHeaderPos << dataOffset;
                 }
             } else {

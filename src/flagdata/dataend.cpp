@@ -16,7 +16,7 @@ QString ProtocolFlagDataEnd::dataToString() {
     return target.toHex(' ');
 }
 
-bool ProtocolFlagDataEnd::verify(char *data, int offset, int maxSize) {
+bool ProtocolFlagDataEnd::verify(char *data, int offset, int maxSize, const QLoggingCategory& (*debugPtr)()) {
     auto endOffset = offset;
     if (!mSizeFlag.isNull()) {
         endOffset += mSizeFlag->dataSize;

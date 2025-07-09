@@ -1,8 +1,9 @@
 #include "flagdata/datasize.h"
 
-PROTOCOL_CODEC_NAMESPACE_BEGIN
+#include <qloggingcategory.h>
 
-ProtocolFlagDataSize::ProtocolFlagDataSize(int byteSize)
+PROTOCOL_CODEC_NAMESPACE_BEGIN
+    ProtocolFlagDataSize::ProtocolFlagDataSize(int byteSize)
     : ProtocolFlagData(ProtocolFlag::Flag_Size)
     , byteSize(byteSize)
     , dataSize(0)
@@ -13,7 +14,7 @@ QString ProtocolFlagDataSize::dataToString() {
     return QString::number(byteSize);
 }
 
-bool ProtocolFlagDataSize::verify(char *data, int offset, int maxSize) {
+bool ProtocolFlagDataSize::verify(char *data, int offset, int maxSize, const QLoggingCategory& (*debugPtr)()) {
     if (offset + byteSize > maxSize) {
         return false;
     }
@@ -24,8 +25,14 @@ bool ProtocolFlagDataSize::verify(char *data, int offset, int maxSize) {
     }
     if (sizeValueMax > 0) {
         if (dataSize > sizeValueMax) {
+            if (debugPtr) {
+                qCInfo(debugPtr) << "data size greater than max value:" << dataSize;
+            }
             return false;
         }
+    }
+    if (debugPtr && dataSize < 0) {
+        qCInfo(debugPtr) << "data size error:" << dataSize;
     }
     return dataSize >= 0;
 }

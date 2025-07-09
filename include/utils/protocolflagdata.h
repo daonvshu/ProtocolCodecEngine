@@ -4,13 +4,6 @@
 
 PROTOCOL_CODEC_NAMESPACE_BEGIN
 
-class ProtocolFlagData;
-class ProtocolFlagReaderInterface {
-public:
-    virtual ~ProtocolFlagReaderInterface() = default;
-    virtual QSharedPointer<ProtocolFlagData> readFlag(ProtocolFlag flag) = 0;
-};
-
 class ProtocolFlagData {
 public:
     virtual ~ProtocolFlagData() = default;
@@ -18,17 +11,14 @@ public:
 
     virtual QString dataToString();
 
-    virtual bool verify(char* data, int offset, int maxSize) = 0;
+    virtual bool verify(char* data, int offset, int maxSize, const QLoggingCategory& (*debugPtr)()) = 0;
 
     virtual void doFrameOffset(int& offset) = 0;
 
     virtual QSharedPointer<ProtocolFlagData> copy() const = 0;
 
-    void setFlagReader(ProtocolFlagReaderInterface* reader);
-
 public:
     ProtocolFlag flag;
-    ProtocolFlagReaderInterface* flagReader = nullptr;
 };
 
 inline QDebug operator<<(QDebug debug, ProtocolFlagData* data) {

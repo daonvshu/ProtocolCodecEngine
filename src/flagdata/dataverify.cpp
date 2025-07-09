@@ -1,5 +1,7 @@
 #include "flagdata/dataverify.h"
 
+#include <qloggingcategory.h>
+
 #include "flagdata/dataheader.h"
 #include "flagdata/datasize.h"
 
@@ -39,7 +41,7 @@ static ushort sumCheck2(const char* arr, int lens) {
  * @param length
  * @return
  */
-static uint16_t crc16(uchar *data, uchar length) {
+static uint16_t crc16(uchar *data, int length) {
     int i;
     uint16_t crc_result = 0xffff;
     while (length--) {
@@ -80,20 +82,24 @@ QString ProtocolFlagDataVerify::dataToString() {
     return {};
 }
 
-bool ProtocolFlagDataVerify::verify(char *data, int offset, int maxSize) {
+bool ProtocolFlagDataVerify::verify(char *data, int offset, int maxSize, const QLoggingCategory& (*debugPtr)()) {
     int verifyBegin = offset;
     int verifySize = 0;
     char* verifyCodePtr = nullptr;
-    for (const auto& flag : verifyFlags) {
+    for (int i = 0; i < (int)ProtocolFlag::Flag_Max; i++) {
+        auto flag = verifyFlags[i];
+        if (flag == nullptr) {
+            continue;
+        }
         switch (flag->flag) {
             case ProtocolFlag::Flag_Header:{
-                auto headerFlag = qSharedPointerCast<ProtocolFlagDataHeader>(flagReader->readFlag(flag->flag));
+                auto headerFlag = static_cast<ProtocolFlagDataHeader*>(flag);
                 verifyBegin -= headerFlag->target.size();
                 verifySize += headerFlag->target.size();
             }
                 break;
             case ProtocolFlag::Flag_Size: {
-                auto sizeFlag = qSharedPointerCast<ProtocolFlagDataSize>(flagReader->readFlag(flag->flag));
+                auto sizeFlag = static_cast<ProtocolFlagDataSize*>(flag);
                 verifyBegin -= sizeFlag->byteSize;
                 verifySize += sizeFlag->byteSize + sizeFlag->dataSize;
                 verifyCodePtr = data + offset + sizeFlag->dataSize;
@@ -110,46 +116,66 @@ bool ProtocolFlagDataVerify::verify(char *data, int offset, int maxSize) {
     if (verifyCodePtr == nullptr) {
         return false;
     }
+    uint16_t curVerify = 0;
+    uint16_t verifyCode = 1;
     switch (verifyType) {
         case Crc16: {
-            uint16_t curVerify = crc16((uchar*)(data + verifyBegin), verifySize);
-            uint16_t verifyCode = (verifyCodePtr[0] & 0xff) | ((verifyCodePtr[1] & 0xff) << 8);
-            return curVerify == verifyCode;
+            curVerify = crc16((uchar*)(data + verifyBegin), verifySize);
+            verifyCode = (verifyCodePtr[0] & 0xff) | ((verifyCodePtr[1] & 0xff) << 8);
+            break;
         }
         case Sum8: {
-            uchar curVerify = sumCheck(data + verifyBegin, verifySize);
-            return curVerify == (uchar)verifyCodePtr[0];
+            curVerify = sumCheck(data + verifyBegin, verifySize);
+            verifyCode = (uchar)verifyCodePtr[0];
+            break;
         }
         case Sum16: {
-            ushort curVerify = sumCheck2(data + verifyBegin, verifySize);
-            auto verifyCode = (ushort)((verifyCodePtr[0] & 0xff) | ((verifyCodePtr[1] & 0xff) << 8));
-            return curVerify == verifyCode;
+            curVerify = sumCheck2(data + verifyBegin, verifySize);
+            verifyCode = (ushort)((verifyCodePtr[0] & 0xff) | ((verifyCodePtr[1] & 0xff) << 8));
+            break;
         }
     }
-    return false;
+    auto valid = curVerify == verifyCode;
+    if (debugPtr && !valid) {
+        QString verifyTypeStr;
+        switch (verifyType) {
+            case Crc16: verifyTypeStr = "CRC16"; break;
+            case Sum8: verifyTypeStr = "SUM8"; break;
+            case Sum16: verifyTypeStr = "SUM16"; break;
+        }
+        qCInfo(debugPtr) << QString("%1 check fail, calc code: %2, data code: %3")
+            .arg(verifyTypeStr).arg(curVerify, 0, 16).arg(verifyCode, 0, 16);
+    }
+    return valid;
 }
 
 void ProtocolFlagDataVerify::doFrameOffset(int &offset) {
 }
 
 void ProtocolFlagDataVerify::setVerifyFlags(const QList<QSharedPointer<ProtocolFlagData>> &flags) {
-    verifyFlags = flags;
+    for (const auto& flag : flags) {
+        verifyFlags[(int)flag->flag] = flag.data();
+    }
 }
 
 QByteArray ProtocolFlagDataVerify::getVerifyCode(const QByteArray &buff, int contentOffset) {
     auto dataPtr = buff.data();
     int verifyBegin = contentOffset;
     int verifySize = 0;
-    for (const auto& flag : verifyFlags) {
+    for (int i = 0; i < (int)ProtocolFlag::Flag_Max; i++) {
+        auto flag = verifyFlags[i];
+        if (flag == nullptr) {
+            continue;
+        }
         switch (flag->flag) {
             case ProtocolFlag::Flag_Header:{
-                auto headerFlag = qSharedPointerCast<ProtocolFlagDataHeader>(flagReader->readFlag(flag->flag));
+                auto headerFlag = static_cast<ProtocolFlagDataHeader*>(flag);
                 verifyBegin -= headerFlag->target.size();
                 verifySize += headerFlag->target.size();
             }
                 break;
             case ProtocolFlag::Flag_Size: {
-                auto sizeFlag = qSharedPointerCast<ProtocolFlagDataSize>(flagReader->readFlag(flag->flag));
+                auto sizeFlag = static_cast<ProtocolFlagDataSize*>(flag);
                 verifyBegin -= sizeFlag->byteSize;
                 verifySize += sizeFlag->byteSize + sizeFlag->dataSize;
             }

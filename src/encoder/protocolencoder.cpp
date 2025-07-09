@@ -23,6 +23,9 @@ ProtocolTypeCodecInterface *ProtocolEncoder::getCodec(int type) {
 QByteArray ProtocolEncoder::encodeFrame(const QByteArray &content, int dataType) {
     QByteArray buffer;
     int contentOffset = 0;
+    printInfo([&] {
+        return QString("encode type %1 begin, content size: %2").arg(dataType).arg(content.size());
+    });
     for (const auto& flag : protocolFlags) {
         switch (flag->flag) {
             case ProtocolFlag::Flag_Header: {
@@ -49,7 +52,11 @@ QByteArray ProtocolEncoder::encodeFrame(const QByteArray &content, int dataType)
                 break;
             case ProtocolFlag::Flag_Verify: {
                 auto verifyFlag = qSharedPointerCast<ProtocolFlagDataVerify>(flag);
-                buffer.append(verifyFlag->getVerifyCode(buffer, contentOffset));
+                auto verifyCode = verifyFlag->getVerifyCode(buffer, contentOffset);
+                printInfo([&] {
+                    return "content verify code: " + verifyCode.toHex(' ');
+                });
+                buffer.append(verifyCode);
             }
                 break;
             case ProtocolFlag::Flag_End: {

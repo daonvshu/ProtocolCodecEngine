@@ -19,7 +19,7 @@ public:
 
     QString dataToString() override;
 
-    bool verify(char *data, int offset, int maxSize) override;
+    bool verify(char *data, int offset, int maxSize, const QLoggingCategory& (*debugPtr)()) override;
 
     void doFrameOffset(int &offset) override;
 
@@ -34,7 +34,7 @@ public:
     int byteSize;
 
 private:
-    QList<QSharedPointer<ProtocolFlagData>> verifyFlags;
+    ProtocolFlagData* verifyFlags[256] = { nullptr };
 };
 
 PROTOCOL_CODEC_NAMESPACE_END

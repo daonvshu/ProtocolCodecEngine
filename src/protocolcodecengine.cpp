@@ -37,6 +37,11 @@ void ProtocolCodecEngine::setDecodeTimeout(int ms) {
     decoder.setDecodeTimeout(ms);
 }
 
+void ProtocolCodecEngine::setLogging(LoggingCategoryPtr categoryPtr) {
+    decoder.setLogging(categoryPtr);
+    encoder.setLogging(categoryPtr);
+}
+
 void ProtocolCodecEngine::appendBuffer(const QByteArray &buffer) {
     decoder.addBuffer(buffer);
 }

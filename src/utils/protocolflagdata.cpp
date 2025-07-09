@@ -10,10 +10,6 @@ QString ProtocolFlagData::dataToString() {
     return {};
 }
 
-void ProtocolFlagData::setFlagReader(ProtocolFlagReaderInterface *reader) {
-    flagReader = reader;
-}
-
 PROTOCOL_CODEC_NAMESPACE_END
 
 

@@ -23,6 +23,14 @@ codecEngine.setTypeEncodeByteSize(3);
 |V|verify/校验类型|CRC16、SUM8、SUM16|
 |E|end/帧尾|FE|
 
+使用`setLogging`函数设置日志筛选器进行打印，检查解码过程中的错误：
+
+```cpp
+Q_LOGGING_CATEGORY(printTest, "print_test")
+
+codecEngine.setLogging(printTest);
+```
+
 ### 2. 注册数据类型
 
 目前有三种内容编码方式，分别对应`JsonCodec`、`SerializeCodec`、`BytesCodec`:  

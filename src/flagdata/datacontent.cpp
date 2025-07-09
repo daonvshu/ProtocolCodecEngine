@@ -16,7 +16,7 @@ ProtocolFlagDataContent::ProtocolFlagDataContent(int byteSize)
     , byteSize(byteSize)
 {}
 
-bool ProtocolFlagDataContent::verify(char *data, int offset, int maxSize) {
+bool ProtocolFlagDataContent::verify(char *data, int offset, int maxSize, const QLoggingCategory& (*debugPtr)()) {
     if (!mSizeFlag.isNull()) {
         contentData = QByteArray(data + offset, mSizeFlag->dataSize);
     } else {

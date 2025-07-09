@@ -12,6 +12,8 @@
 
 PROTOCOL_CODEC_USING_NAMESPACE
 
+Q_LOGGING_CATEGORY(printTest, "print_test")
+
 struct DataType1 {
     enum {
         Type = 1
@@ -234,7 +236,8 @@ public:
         codecEngine.registerType<BytesCodec<FrameData>>(this, &TestClass2::callbackFunc);
         codecEngine.setBufferMaxSize(sizeof(FrameData) + 9);
         codecEngine.setSizeMaxValue(sizeof(FrameData) + 2);
-        codecEngine.setDecodeTimeout(10);
+        //codecEngine.setDecodeTimeout(10);
+        codecEngine.setLogging(printTest);
 
         QFile file("1.bin");
         file.open(QIODevice::ReadOnly);
@@ -256,6 +259,56 @@ public:
 private:
     ProtocolCodecEngine codecEngine;
     int objSize = 0;
+};
+
+struct MicroFrame {
+    float pdIn[127];
+    float lpf[127];
+    float tmp[1];
+    float pzt[1];
+};
+
+struct  FD{
+    enum {
+        Type = 22
+    };
+    MicroFrame data[8];
+    QByteArray toBytes() const {
+        QByteArray tmp(sizeof(FD), 0);
+        memcpy(tmp.data(), this, sizeof(FD));
+        return tmp;
+    }
+    static FD fromBytes(const QByteArray& tmp) {
+        FD res;
+        memcpy(&res, tmp.data(), tmp.size());
+        return res;
+    }
+};
+Q_DECLARE_METATYPE(FD)
+
+class TestClass3 {
+public:
+    void test() {
+        codecEngine.frameDeclare("H(FEFE)S2CV(CRC16)E(FEFF)");
+        codecEngine.setVerifyFlags("SC");
+        codecEngine.registerType<FD, BytesCodec>();
+
+        FD data;
+        for (int j = 0; j < 8; j++) {
+            for(int i = 0; i < 127; i++) {
+                data.data[j].lpf[i] = 2;
+                data.data[j].pdIn[i] = 4;
+            }
+            data.data[j].tmp[0] = 0;
+            data.data[j].pzt[0] = 0;
+        }
+
+        auto encoded = codecEngine.encode(data);
+        qDebug() << encoded.toHex(' ');
+    }
+
+private:
+    ProtocolCodecEngine codecEngine;
 };
 
 int main(int argc, char* argv[]) {
