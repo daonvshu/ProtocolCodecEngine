@@ -64,7 +64,9 @@ class ProtocolCodecEngine {
             CodecType.JSON -> JsonCodec(kClass)
             CodecType.Bytes -> BytesCodec(kClass)
         }
-        val callback = findMethodByType(T::class)
+        val callback by lazy {
+            findMethodByType(kClass)
+        }
         decoder.typeDecoders[typeAnnotation.id] = { content ->
             val data = codec.decode(content)
             callback.call(context, data)
@@ -81,19 +83,19 @@ class ProtocolCodecEngine {
         }
     }
 
-    inline fun<reified T: Any> encode(data: Any): ByteArray {
+    inline fun<reified T: Any> encode(data: T): ByteArray {
         val kClass: KClass<T> = T::class
         val typeAnnotation = kClass.annotations.filterIsInstance<Type>().firstOrNull()
         if (typeAnnotation == null) {
-            throw IllegalArgumentException("Class ${kClass.simpleName} must be annotated with @Type!")
+            throw IllegalStateException("Class ${kClass.simpleName} must be annotated with @Type!")
         }
         val contentEncoder = encoder.typeEncoders[typeAnnotation.id]
         val content = contentEncoder?.invoke(data)
-            ?: throw IllegalArgumentException("Can not find encoder for ${kClass.simpleName}")
+            ?: throw IllegalStateException("Can not find encoder for ${kClass.simpleName}")
         return encoder.encodeFrame(content, typeAnnotation.id)
     }
 
-    fun encode(id: Int): ByteArray {
+    fun encodeId(id: Int): ByteArray {
         return encoder.encodeFrame(ByteArray(0), id)
     }
 
@@ -111,7 +113,7 @@ class ProtocolCodecEngine {
                 }
             }
         }
-        throw IllegalArgumentException("Can not find subscribe method for $clazz with param type: ${clazz.simpleName}")
+        throw IllegalStateException("Can not find subscribe method for $clazz with param type: ${clazz.simpleName}")
     }
 
     fun findMethodByType(id: Int): KFunction<*> {

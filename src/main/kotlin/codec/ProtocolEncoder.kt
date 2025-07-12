@@ -40,11 +40,11 @@ class ProtocolEncoder : ProtocolCodec() {
                 FlagContent -> {
                     contentOffset = buffer.size()
                     // 写入dataType，低位优先（小端）
-                    val typeBytes = ByteBuffer.allocate(typeByteSize)
+                    val typeBytes = ByteBuffer.allocate(4)
                         .order(ByteOrder.LITTLE_ENDIAN)
                         .putInt(dataType)
                         .array()
-                    buffer.write(typeBytes)
+                    buffer.write(typeBytes.copyOfRange(0, typeByteSize))
                     if (data.isNotEmpty()) {
                         buffer.write(data)
                     }
