@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "com.daonvshu.protocol.codec"
-version = "1.0.1"
+version = "1.0.2"
 
 repositories {
     mavenCentral()
@@ -11,7 +11,7 @@ repositories {
 
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("com.google.code.gson:gson:2.13.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
 
     testImplementation(kotlin("test"))
 }
