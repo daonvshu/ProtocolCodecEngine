@@ -1,24 +1,34 @@
 #pragma once
 
 #include "../protocolflags.h"
+#include "../protocolmetadata.h"
 
 PROTOCOL_CODEC_NAMESPACE_BEGIN
 
 class ProtocolFlagData {
 public:
+    explicit ProtocolFlagData(ProtocolFlag flag, int byteSize);
     virtual ~ProtocolFlagData() = default;
-    explicit ProtocolFlagData(ProtocolFlag flag);
 
     virtual QString dataToString();
 
-    virtual bool verify(char* data, int offset, int maxSize, const QLoggingCategory& (*debugPtr)()) = 0;
+    virtual bool verify(char* data, int baseOffset, int maxSize, ProtocolMetaData* metaData, const QLoggingCategory& (*debugPtr)()) = 0;
 
-    virtual void doFrameOffset(int& offset) = 0;
+    void bindPrev(ProtocolFlagData* prevPtr);
 
-    virtual QSharedPointer<ProtocolFlagData> copy() const = 0;
+    virtual QByteArray getBytesContent() const = 0;
+
+protected:
+    int getCurrentByteOffset() const;
 
 public:
     ProtocolFlag flag;
+    int byteSize;
+    ProtocolFlagData* prev = nullptr;
+    ProtocolFlagData* next = nullptr;
+    bool isVerifyTarget = false;
+    bool isSizeTarget = false;
+    bool isLittleEndian = true;
 };
 
 inline QDebug operator<<(QDebug debug, ProtocolFlagData* data) {

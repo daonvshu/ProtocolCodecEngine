@@ -2,7 +2,7 @@
 
 #include <qobject.h>
 
-#include "global.h"
+#include "../global.h"
 #include "../utils/protocolflagdata.h"
 
 PROTOCOL_CODEC_NAMESPACE_BEGIN
@@ -13,11 +13,9 @@ public:
 
     QString dataToString() override;
 
-    bool verify(char *data, int offset, int maxSize, const QLoggingCategory& (*debugPtr)()) override;
+    bool verify(char *data, int baseOffset, int maxSize, ProtocolMetaData* metaData, const QLoggingCategory& (*debugPtr)()) override;
 
-    void doFrameOffset(int &offset) override;
-
-    QSharedPointer<ProtocolFlagData> copy() const override;
+    QByteArray getBytesContent() const override;
 
 public:
     QByteArray target;

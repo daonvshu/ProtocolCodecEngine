@@ -1,10 +1,9 @@
-#include "decoder/protocoldecoder.h"
+#include "protocoldecoder.h"
 
 #include "flagdata/dataheader.h"
 #include "flagdata/datacontent.h"
 #include "flagdata/datasize.h"
-#include "flagdata/dataverify.h"
-#include "flagdata/dataend.h"
+#include "flagdata/datatype.h"
 
 #include <qdatetime.h>
 
@@ -25,23 +24,36 @@ PROTOCOL_CODEC_NAMESPACE_BEGIN
 {
 }
 
-void ProtocolDecoder::setFlags(const QList<QSharedPointer<ProtocolFlagData>> &flags) {
+void ProtocolDecoder::setFlags(ProtocolFlagData* flags) {
     ProtocolCodecInterface::setFlags(flags);
 
     static QMap<ProtocolFlag, int> flagWeight = {
             { ProtocolFlag::Flag_Header, 100 },
-            { ProtocolFlag::Flag_Size, 99 },
-            { ProtocolFlag::Flag_End, 98 },
-            { ProtocolFlag::Flag_Verify, 97 },
-            { ProtocolFlag::Flag_Content, 96 },
+            { ProtocolFlag::Flag_Address, 100 },
+            { ProtocolFlag::Flag_Type, 100 },
+            { ProtocolFlag::Flag_Size, 100 },
+            { ProtocolFlag::Flag_End, 99 },
+            { ProtocolFlag::Flag_Verify, 98 },
+            { ProtocolFlag::Flag_Content, 97 },
     };
-    std::sort(protocolFlags.begin(), protocolFlags.end(), [] (const QSharedPointer<ProtocolFlagData>& a, const QSharedPointer<ProtocolFlagData>& b) {
-        return flagWeight[a->flag] > flagWeight[b->flag];
-    });
 
-    flagCount = protocolFlags.size();
-    for (int i = 0; i < flagCount; i++) {
-        decodeFlags[i] = protocolFlags[i].data();
+    QVector<ProtocolFlagData*> flagList;
+    for (auto* node = flags; node != nullptr; node = node->next) {
+        flagList.append(node);
+    }
+
+    // 按权重排序（高权重在前）
+    std::stable_sort(flagList.begin(), flagList.end(), [&](ProtocolFlagData* a, ProtocolFlagData* b) {
+         int wa = flagWeight.value(a->flag, 0);
+         int wb = flagWeight.value(b->flag, 0);
+         return wa > wb;
+     });
+
+    // 填充 decodeFlags 数组
+    flagCount = 0;
+    for (auto* f : flagList) {
+        if (flagCount >= 256) break;
+        decodeFlags[flagCount++] = f;
     }
 }
 
@@ -87,6 +99,11 @@ void ProtocolDecoder::addBuffer(const QByteArray &buffer) {
     qDebug() << "decode buffer begin, current buffer size:" << bufferCache.size();
 #endif
 
+    ProtocolMetaData* decodeMetaData = nullptr;
+    if (metadataEnable) {
+        decodeMetaData = new ProtocolMetaData;
+    }
+
     int lastCheckHeaderIndex = 0;
     int maxCheckHeaderSize = validHeaderPos.size();
     while (dataOffset < dataSize) {
@@ -97,10 +114,15 @@ void ProtocolDecoder::addBuffer(const QByteArray &buffer) {
         bool frameDecodeSuccess = true;
         for (int i = 0; i < flagCount; i++) {
             auto flag = decodeFlags[i];
-            bool segmentValid = flag->verify(data, frameOffset, dataSize, debugPtr);
+            bool segmentValid = flag->verify(data, dataOffset, dataSize, decodeMetaData, debugPtr);
             if (segmentValid) {
-                flag->doFrameOffset(frameOffset);
-                if (flag->flag == ProtocolFlag::Flag_Header) {
+                //offset used byte size
+                if (flag->flag == ProtocolFlag::Flag_Content) {
+                    frameOffset += dynamic_cast<ProtocolFlagDataContent*>(flag)->getByteSize();
+                } else {
+                    frameOffset += flag->byteSize;
+                }
+                if (flag->prev == nullptr) {
                     validHeaderPos << dataOffset;
                 }
             } else {
@@ -111,37 +133,59 @@ void ProtocolDecoder::addBuffer(const QByteArray &buffer) {
                 break;
             }
         }
+
+        if (decodeMetaData != nullptr && decodeMetaData->decodeType != INT_MAX) {
+            metaData[decodeMetaData->decodeType] = *decodeMetaData;
+            lastMetaData = *decodeMetaData;
+        }
+
         if (!frameDecodeSuccess) {
             dataOffset++;
-        } else {
-            decodedOffset = frameOffset;
-            dataOffset = frameOffset;
-            while (lastCheckHeaderIndex < maxCheckHeaderSize) {
-                if (validHeaderPos[lastCheckHeaderIndex] < decodedOffset) {
-                    lastCheckHeaderIndex++;
-                } else {
-                    break;
-                }
-            }
+            continue;
+        }
 
-            auto content = get<ProtocolFlagDataContent>(ProtocolFlag::Flag_Content)->contentData;
-            int type = 0;
-            memcpy(&type, content.data(), mTypeByteSize);
-            auto decoder = typeDecoders[type];
-            if (!decoder) {
-                qWarning() << QString::asprintf("cannot find decoder to decode frame type: 0x%x", type);
+        decodedOffset = frameOffset;
+        dataOffset = frameOffset;
+        while (lastCheckHeaderIndex < maxCheckHeaderSize) {
+            if (validHeaderPos[lastCheckHeaderIndex] < decodedOffset) {
+                lastCheckHeaderIndex++;
             } else {
-                decoder(content.mid(mTypeByteSize));
+                break;
             }
+        }
+
+        int type = 0;
+        QByteArray content;
+        auto nextPtr = protocolFlags;
+        while (nextPtr != nullptr && nextPtr->next != nullptr) {
+            if (nextPtr->flag == ProtocolFlag::Flag_Type) {
+                type = dynamic_cast<ProtocolFlagDataType*>(nextPtr)->value;
+            } else if (nextPtr->flag == ProtocolFlag::Flag_Content) {
+                content = dynamic_cast<ProtocolFlagDataContent*>(nextPtr)->contentData;
+            }
+            nextPtr = nextPtr->next;
+        }
+        if (metadataEnable) {
+            metaData[type].content = content;
+            lastMetaData.content = content;
+        }
+
+        auto decoder = typeDecoders[type];
+        if (!decoder) {
+            qWarning() << QString::asprintf("cannot find decoder to decode frame type: 0x%x", type);
+        } else {
+            decoder(content);
+        }
 
 #ifdef DECODE_LOCAL_DEBUG
-            static qint64 lastDecodeTime = QDateTime::currentMSecsSinceEpoch();
-            auto curTime = QDateTime::currentMSecsSinceEpoch();
-            qDebug() << curTime - lastDecodeTime << " decode time, current loop:" << loopSize;
-            lastDecodeTime = curTime;
+        static qint64 lastDecodeTime = QDateTime::currentMSecsSinceEpoch();
+        auto curTime = QDateTime::currentMSecsSinceEpoch();
+        qDebug() << curTime - lastDecodeTime << " decode time, current loop:" << loopSize;
+        lastDecodeTime = curTime;
 #endif
-        }
     }
+
+    delete decodeMetaData;
 
 #ifdef DECODE_LOCAL_DEBUG
     //bufferAllSize += bufferCache.size();
@@ -150,12 +194,7 @@ void ProtocolDecoder::addBuffer(const QByteArray &buffer) {
 
     validHeaderPos = validHeaderPos.mid(maxCheckHeaderSize);
     if (validHeaderPos.isEmpty()) {
-        auto header = get<ProtocolFlagDataHeader>(ProtocolFlag::Flag_Header);
-        if (!header) {
-            bufferCache.clear();
-        } else {
-            bufferCache = bufferCache.right(header->target.size());
-        }
+        bufferCache = bufferCache.right(protocolFlags->byteSize);
         return;
     }
     decodedOffset = qMax(decodedOffset, validHeaderPos.first()); //如果第一个子对象匹配成功，则移除前置垃圾数据
@@ -180,12 +219,7 @@ void ProtocolDecoder::addBuffer(const QByteArray &buffer) {
         }
     }
     if (validHeaderPos.isEmpty()) {
-        auto header = get<ProtocolFlagDataHeader>(ProtocolFlag::Flag_Header);
-        if (!header) {
-            bufferCache.clear();
-        } else {
-            bufferCache = bufferCache.right(header->target.size());
-        }
+        bufferCache = bufferCache.right(protocolFlags->byteSize);
     }
 
 #ifdef DECODE_LOCAL_DEBUG
@@ -200,12 +234,35 @@ void ProtocolDecoder::setBufferMaxSize(int size) {
     mBufferMaxSize = size;
 }
 
-void ProtocolDecoder::setSizeMaxValue(int value) {
-    get<ProtocolFlagDataSize>(ProtocolFlag::Flag_Size)->setSizeMaxValue(value);
+void ProtocolDecoder::setSizeMaxValue(int value) const {
+    auto nextPtr = protocolFlags;
+    while (nextPtr != nullptr && nextPtr->next != nullptr) {
+        if (nextPtr->flag == ProtocolFlag::Flag_Size) {
+            dynamic_cast<ProtocolFlagDataSize*>(nextPtr)->setSizeMaxValue(value);
+            break;
+        }
+        nextPtr = nextPtr->next;
+    }
 }
 
 void ProtocolDecoder::setDecodeTimeout(int ms) {
     mDecodeTimeout = ms;
+}
+
+void ProtocolDecoder::enableMetaDataRecord() {
+    metadataEnable = true;
+}
+
+void ProtocolDecoder::clearCache() {
+    bufferCache.clear();
+}
+
+ProtocolMetaData ProtocolDecoder::getLastMetaData() const {
+    return lastMetaData;
+}
+
+ProtocolMetaData ProtocolDecoder::getLastMetaData(int type) const {
+    return metaData[type];
 }
 
 PROTOCOL_CODEC_NAMESPACE_END

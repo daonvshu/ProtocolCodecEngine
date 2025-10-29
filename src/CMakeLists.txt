@@ -17,47 +17,39 @@ else ()
     set(CMAKE_CXX_FLAGS -Wno-attributes)
 endif()
 
-set(SRC_HEADERS
-    ../include/protocolcodecengine.h
-    ../include/protocolcodecinterface.h
-
-    ../include/utils/protocoltemplatedecoder.h
-    ../include/utils/protocolflagdata.h
-
-    ../include/flagdata/dataheader.h
-    ../include/flagdata/datasize.h
-    ../include/flagdata/datacontent.h
-    ../include/flagdata/dataverify.h
-    ../include/flagdata/dataend.h
-
-    ../include/decoder/protocoldecoder.h
-
-    ../include/encoder/protocolencoder.h
-)
-
-set(SRC_SOURCE
-    protocolcodecengine.cpp
-    protocolcodecinterface.cpp
-
-    utils/protocoltemplatedecoder.cpp
-    utils/protocolflagdata.cpp
-
-    flagdata/dataheader.cpp
-    flagdata/datasize.cpp
-    flagdata/datacontent.cpp
-    flagdata/dataverify.cpp
-    flagdata/dataend.cpp
-
-    decoder/protocoldecoder.cpp
-
-    encoder/protocolencoder.cpp
-)
-
 set(CMAKE_DEBUG_POSTFIX "d")
 
 add_library(${PROJECT_NAME}
-    ${SRC_HEADERS}
-    ${SRC_SOURCE}
+    protocolcodecengine.h
+    protocolcodecengine.cpp
+    protocolcodecinterface.h
+    protocolcodecinterface.cpp
+
+    utils/protocoltemplatedecoder.h
+    utils/protocoltemplatedecoder.cpp
+    utils/protocolflagdata.h
+    utils/protocolflagdata.cpp
+
+    flagdata/dataheader.h
+    flagdata/dataheader.cpp
+    flagdata/datasize.h
+    flagdata/datasize.cpp
+    flagdata/datacontent.h
+    flagdata/datacontent.cpp
+    flagdata/dataverify.h
+    flagdata/dataverify.cpp
+    flagdata/dataend.h
+    flagdata/dataend.cpp
+    flagdata/dataaddress.h
+    flagdata/dataaddress.cpp
+    flagdata/datatype.h
+    flagdata/datatype.cpp
+
+    decoder/protocoldecoder.h
+    decoder/protocoldecoder.cpp
+
+    encoder/protocolencoder.h
+    encoder/protocolencoder.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}
@@ -65,7 +57,7 @@ target_link_libraries(${PROJECT_NAME}
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include>
 )
 
@@ -84,7 +76,7 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../include/
     FILES_MATCHING PATTERN "*.h"
 )
 
-configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/ProtocolCodecEngineConfig.cmake.in
+configure_package_config_file(../cmake/ProtocolCodecEngineConfig.cmake.in
     "${CMAKE_CURRENT_BINARY_DIR}/ProtocolCodecEngineConfig.cmake"
     INSTALL_DESTINATION lib/cmake/ProtocolCodecEngine
 )

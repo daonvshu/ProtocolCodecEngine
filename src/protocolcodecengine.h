@@ -13,6 +13,7 @@ PROTOCOL_CODEC_NAMESPACE_BEGIN
 class ProtocolCodecEngine : public QObject {
 public:
     explicit ProtocolCodecEngine(QObject *parent = nullptr);
+    ~ProtocolCodecEngine() override;
 
     /**
      * @brief 定义协议，例如：H(5AFF)S2CV(CRC16)E(FE) （括号表示具体值，数字表示字节数）
@@ -29,19 +30,31 @@ public:
      * @brief 设置校验Flag（需要先调用frameDeclare），例如：HSC，表示校验帧头、大小、内容所有字节数
      * @param flagStr
      */
-    void setVerifyFlags(const QString& flagStr);
+    void setVerifyFlags(const QString& flagStr) const;
 
     /**
-     * @brief 设置类型编解码使用的字节数，默认2字节，最大4字节
-     * @param size
+     * @brief 设置用于计算Size的Flag（需要先调用frameDeclare），例如：HSC，表示计算帧头、大小、内容所有字节数
+     * @param flagStr
      */
-    void setTypeEncodeByteSize(int size);
+    void setSizeFlags(const QString& flagStr) const;
+
+    /**
+     * @brief 设置内容大小从类型获取，没有Size字段时使用
+     * @param contentSizeFromType
+     */
+    void setContentSizeDependsOnType(const QMap<int, int>& contentSizeFromType) const;
+
+    /**
+     * @brief 设置地址值
+     * @param address
+     */
+    void setAddressValue(uint32_t address) const;
 
     /**
      * @brief 设置帧长度字节最大值
      * @param value
      */
-    void setSizeMaxValue(int value);
+    void setSizeMaxValue(int value) const;
 
     /**
      * @brief 设置帧缓存最大值
@@ -143,7 +156,48 @@ public:
      */
     void appendBuffer(const QByteArray& buffer);
 
+    /**
+     * @brief 清空缓存
+     */
+    void clearDecodeCacheBuffer();
+
+    /**
+     * @brief 开启记录解码元数据
+     */
+    void enableRecordDecodeMetaData();
+
+    /**
+     * @brief 获取最后一次编码的元数据
+     * @return
+     */
+    ProtocolMetaData getLastEncodeMetaData() const;
+
+    /**
+     * @brief 获取指定类型最后一次编码的元数据
+     * @param type
+     * @return
+     */
+    ProtocolMetaData getLastEncodeMetaData(int type) const;
+
+    /**
+     * @brief 获取最后一次解码的元数据
+     * @return
+     */
+    ProtocolMetaData getLastDecodeMetaData() const;
+
+    /**
+     * @brief 获取指定类型最后一次解码的元数据
+     * @param type
+     * @return
+     */
+    ProtocolMetaData getLastDecodeMetaData(int type) const;
+
 private:
+    static void clearFlags(ProtocolFlagData* flags);
+    QList<ProtocolFlagData*> getFlagDataByFlags(ProtocolFlagData* makeFlags) const;
+
+private:
+    ProtocolFlagData* flags = nullptr;
     ProtocolDecoder decoder;
     ProtocolEncoder encoder;
 };

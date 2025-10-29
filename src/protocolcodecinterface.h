@@ -14,28 +14,18 @@ class ProtocolCodecInterface : public QObject {
 public:
     explicit ProtocolCodecInterface(QObject *parent = nullptr);
 
-    virtual void setFlags(const QList<QSharedPointer<ProtocolFlagData>>& flags);
+    virtual void setFlags(ProtocolFlagData* flags);
 
-    void setVerifyFlags(const QList<QSharedPointer<ProtocolFlagData>>& flags);
-
-    void setTypeByteSize(int size);
+    void setAddress(uint32_t address) const;
 
     void setLogging(LoggingCategoryPtr categoryPtr);
 
 protected:
-    QSharedPointer<ProtocolFlagData> enumFlags[(int)ProtocolFlag::Flag_Max];
-    QList<QSharedPointer<ProtocolFlagData>> protocolFlags;
+    ProtocolFlagData* protocolFlags = nullptr;
 
     LoggingCategoryPtr debugPtr = nullptr;
 
-    int mTypeByteSize;
-
 protected:
-    template<typename T>
-    QSharedPointer<T> get(ProtocolFlag flag) {
-        return qSharedPointerCast<T>(enumFlags[(int)flag]);
-    }
-
     void printInfo(const std::function<QString()>& getMessage) const;
 
     void printWarning(const std::function<QString()>& getMessage) const;

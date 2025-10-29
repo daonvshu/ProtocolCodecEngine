@@ -8,6 +8,8 @@ PROTOCOL_CODEC_NAMESPACE_BEGIN
 
 enum class ProtocolFlag {
     Flag_Header = 0,
+    Flag_Address,
+    Flag_Type,
     Flag_Size,
     Flag_Content,
     Flag_Verify,
@@ -20,6 +22,12 @@ inline QDebug operator<<(QDebug debug, ProtocolFlag flag) {
     switch (flag) {
         case ProtocolFlag::Flag_Header:
             debug << "Flag_Header";
+            break;
+        case ProtocolFlag::Flag_Address:
+            debug << "Flag_Address";
+            break;
+        case ProtocolFlag::Flag_Type:
+            debug << "Flag_Type";
             break;
         case ProtocolFlag::Flag_Size:
             debug << "Flag_Size";
