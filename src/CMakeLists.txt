@@ -1,14 +1,12 @@
 cmake_minimum_required(VERSION 3.12)
 
-project(protocol_codec_engine VERSION 0.0.8)
+project(ProtocolCodecEngine VERSION 0.0.9)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core)
-
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../include)
 
 if (WIN32)
     add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
@@ -19,7 +17,13 @@ endif()
 
 set(CMAKE_DEBUG_POSTFIX "d")
 
-add_library(${PROJECT_NAME}
+if (PROTOCOL_CODEC_ENGINE_BUILD_STATIC)
+    set(_build_type STATIC)
+else ()
+    set(_build_type SHARED)
+endif ()
+
+add_library(${PROJECT_NAME} ${_build_type}
     protocolcodecengine.h
     protocolcodecengine.cpp
     protocolcodecinterface.h
@@ -56,6 +60,12 @@ target_link_libraries(${PROJECT_NAME}
     Qt${QT_VERSION_MAJOR}::Core
 )
 
+if (PROTOCOL_CODEC_ENGINE_BUILD_STATIC)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC PROTOCOL_CODEC_STATIC)
+else ()
+    target_compile_definitions(${PROJECT_NAME} PRIVATE PROTOCOL_CODEC_LIBRARY)
+endif ()
+
 target_include_directories(${PROJECT_NAME} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include>
@@ -71,12 +81,12 @@ install(TARGETS ${PROJECT_NAME}
     INCLUDES DESTINATION include
 )
 
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../include/
-    DESTINATION include
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/
+    DESTINATION include/protocolcodec
     FILES_MATCHING PATTERN "*.h"
 )
 
-configure_package_config_file(../cmake/ProtocolCodecEngineConfig.cmake.in
+configure_package_config_file(${CMAKE_SOURCE_DIR}/cmake/ProtocolCodecEngineConfig.cmake.in
     "${CMAKE_CURRENT_BINARY_DIR}/ProtocolCodecEngineConfig.cmake"
     INSTALL_DESTINATION lib/cmake/ProtocolCodecEngine
 )
@@ -88,5 +98,6 @@ install(FILES
 
 install(EXPORT ProtocolCodecEngineTargets
     FILE ProtocolCodecEngineTargets.cmake
+    NAMESPACE ProtocolCodec::
     DESTINATION lib/cmake/ProtocolCodecEngine
 )

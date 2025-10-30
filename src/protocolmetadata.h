@@ -6,7 +6,7 @@
 
 PROTOCOL_CODEC_NAMESPACE_BEGIN
 
-struct ProtocolMetaData {
+struct PROTOCOL_CODEC_EXPORT ProtocolMetaData {
     QByteArray header;
     QByteArray address;
     QByteArray type;

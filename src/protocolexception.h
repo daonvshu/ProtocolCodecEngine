@@ -6,7 +6,7 @@
 
 PROTOCOL_CODEC_NAMESPACE_BEGIN
 
-class ProtocolException : public QException {
+class PROTOCOL_CODEC_EXPORT ProtocolException : public QException {
 public:
     explicit ProtocolException(QString reason): _reason(std::move(reason)) {}
 

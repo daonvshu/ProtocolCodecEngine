@@ -10,7 +10,7 @@
 
 PROTOCOL_CODEC_NAMESPACE_BEGIN
 
-class ProtocolCodecEngine : public QObject {
+class PROTOCOL_CODEC_EXPORT ProtocolCodecEngine : public QObject {
 public:
     explicit ProtocolCodecEngine(QObject *parent = nullptr);
     ~ProtocolCodecEngine() override;
