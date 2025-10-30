@@ -94,7 +94,11 @@ QList<ProtocolTemplateDecoder::Segment> ProtocolTemplateDecoder::parseToSegment(
         }
 
         if (isReverse(c)) {
-            lastSegment.isLittleEndian = false;
+            if (!lastSegment.type.isEmpty()) {
+                segments.last().isLittleEndian = false;
+            } else {
+                throw ProtocolException(QLatin1String("big-endian begin with null type:") + c);
+            }
             continue;
         }
 

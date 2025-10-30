@@ -27,6 +27,9 @@ void ProtocolCodecEngine::frameDeclare(const QString &templateStr) {
         flagSet.insert((int)next->flag, next);
         next = next->next;
     }
+    if (!flagSet.contains((int)ProtocolFlag::Flag_Type)) {
+        qFatal("The flag 'T' must be defined in the codec.");
+    }
     if (flagSet.contains((int)ProtocolFlag::Flag_Content)) {
         auto* flagData = flagSet.value((int)ProtocolFlag::Flag_Content);
         if (flagSet.contains((int)ProtocolFlag::Flag_Size)) {

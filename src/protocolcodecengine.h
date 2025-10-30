@@ -27,13 +27,13 @@ public:
     void frameDeclare(const QString& templateStr);
 
     /**
-     * @brief 设置校验Flag（需要先调用frameDeclare），例如：HSC，表示校验帧头、大小、内容所有字节数
+     * @brief 设置校验Flag（需要先调用frameDeclare），默认值C，例如：HSC，表示校验帧头、大小、内容所有字节数
      * @param flagStr
      */
     void setVerifyFlags(const QString& flagStr) const;
 
     /**
-     * @brief 设置用于计算Size的Flag（需要先调用frameDeclare），例如：HSC，表示计算帧头、大小、内容所有字节数
+     * @brief 设置用于计算Size的Flag（需要先调用frameDeclare），默认值C，例如：HSC，表示计算帧头、大小、内容所有字节数
      * @param flagStr
      */
     void setSizeFlags(const QString& flagStr) const;
