@@ -1,9 +1,11 @@
 #pragma once
 
 #include <qobject.h>
+#include <qsharedpointer.h>
 
-#include "../global.h"
-#include "../utils/protocolflagdata.h"
+#include <protocolcodec/global.h>
+#include <protocolcodec/utils/protocolflagdata.h>
+#include <protocolcodec/verifier/protocolverify.h>
 
 PROTOCOL_CODEC_NAMESPACE_BEGIN
 
@@ -13,10 +15,14 @@ public:
         Crc16,
         Sum8,
         Sum16,
+        Custom,
         None,
     };
 
     explicit ProtocolFlagDataVerify(VerifyType verifyType = None);
+    ~ProtocolFlagDataVerify() override;
+
+    void setCustomVerifier(const QSharedPointer<ProtocolVerify>& customVerifier);
 
     QString dataToString() override;
 
@@ -28,6 +34,9 @@ public:
 
 public:
     VerifyType verifyType;
+    QSharedPointer<ProtocolVerify> verifier;
+    char* decodeVerifyBuffer;
+    char* encodeVerifyBuffer;
 };
 
 PROTOCOL_CODEC_NAMESPACE_END

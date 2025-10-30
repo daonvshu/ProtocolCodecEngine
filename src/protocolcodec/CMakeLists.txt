@@ -49,6 +49,14 @@ add_library(${PROJECT_NAME} ${_build_type}
     flagdata/datatype.h
     flagdata/datatype.cpp
 
+    verifier/protocolverify.h
+    verifier/sumcheckverify.h
+    verifier/sumcheckverify.cpp
+    verifier/crccheckverify.h
+    verifier/crccheckverify.cpp
+    verifier/noneverify.h
+    verifier/noneverify.cpp
+
     decoder/protocoldecoder.h
     decoder/protocoldecoder.cpp
 
@@ -67,7 +75,7 @@ else ()
 endif ()
 
 target_include_directories(${PROJECT_NAME} PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/..
     $<INSTALL_INTERFACE:include>
 )
 

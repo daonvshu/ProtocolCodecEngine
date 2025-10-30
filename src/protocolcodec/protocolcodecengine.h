@@ -5,8 +5,9 @@
 #include "global.h"
 #include "protocoltypecodec.h"
 
-#include "decoder/protocoldecoder.h"
-#include "encoder/protocolencoder.h"
+#include <protocolcodec/decoder/protocoldecoder.h>
+#include <protocolcodec/encoder/protocolencoder.h>
+#include <protocolcodec/verifier/protocolverify.h>
 
 PROTOCOL_CODEC_NAMESPACE_BEGIN
 
@@ -49,6 +50,12 @@ public:
      * @param address
      */
     void setAddressValue(uint32_t address) const;
+
+    /**
+     * @brief 自定义校验器
+     * @param customVerifier
+     */
+    void setCustomVerifier(const QSharedPointer<ProtocolVerify>& customVerifier) const;
 
     /**
      * @brief 设置帧长度字节最大值

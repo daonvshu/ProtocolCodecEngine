@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../protocolflags.h"
-#include "../protocolmetadata.h"
+#include <protocolcodec/protocolflags.h>
+#include <protocolcodec/protocolmetadata.h>
 
 PROTOCOL_CODEC_NAMESPACE_BEGIN
 

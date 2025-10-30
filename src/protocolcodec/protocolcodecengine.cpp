@@ -1,6 +1,7 @@
 #include "protocolcodecengine.h"
 
 #include "flagdata/datacontent.h"
+#include "flagdata/dataverify.h"
 #include "utils/protocoltemplatedecoder.h"
 
 PROTOCOL_CODEC_NAMESPACE_BEGIN
@@ -68,12 +69,24 @@ void ProtocolCodecEngine::setContentSizeDependsOnType(const QMap<int, int>& cont
             dynamic_cast<ProtocolFlagDataContent*>(next)->setContentSizeFromType(contentSizeFromType);
             break;
         }
+        next = next->next;
     }
 }
 
 void ProtocolCodecEngine::setAddressValue(uint32_t address) const {
     decoder.setAddress(address);
     encoder.setAddress(address);
+}
+
+void ProtocolCodecEngine::setCustomVerifier(const QSharedPointer<ProtocolVerify>& customVerifier) const {
+    auto next = flags;
+    while (next != nullptr) {
+        if (next->flag == ProtocolFlag::Flag_Verify) {
+            dynamic_cast<ProtocolFlagDataVerify*>(next)->setCustomVerifier(customVerifier);
+            break;
+        }
+        next = next->next;
+    }
 }
 
 void ProtocolCodecEngine::setSizeMaxValue(int value) const {

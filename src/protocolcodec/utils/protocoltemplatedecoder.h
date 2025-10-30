@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../protocolflags.h"
-#include "../global.h"
+#include <protocolcodec/global.h>
+#include <protocolcodec/protocolflags.h>
 
 #include "protocolflagdata.h"
 

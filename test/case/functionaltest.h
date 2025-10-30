@@ -1,7 +1,7 @@
 #pragma once
 
 #include <qobject.h>
-#include "protocolcodecengine.h"
+#include "../../src/protocolcodec/protocolcodecengine.h"
 
 PROTOCOL_CODEC_USING_NAMESPACE
 

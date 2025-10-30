@@ -1,12 +1,12 @@
 #pragma once
 
-#include "../global.h"
+#include <protocolcodec/global.h>
 
 #include <qbytearray.h>
 
 PROTOCOL_CODEC_NAMESPACE_BEGIN
 
-struct ByteUtils {
+struct PROTOCOL_CODEC_EXPORT ByteUtils {
     template<typename T>
     static void byteSwap(T& data, size_t size) {
         byteSwap((char*)&data, size);

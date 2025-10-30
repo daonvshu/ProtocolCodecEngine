@@ -4,7 +4,7 @@ project(protocol_codec_engine_project)
 
 option(PROTOCOL_CODEC_ENGINE_BUILD_STATIC "Build static libraries" ON)
 
-add_subdirectory(src)
+add_subdirectory(src/protocolcodec)
 
 option(PROTOCOL_CODEC_ENGINE_BUILD_TEST "enable protocol codec engine test project" OFF)
 

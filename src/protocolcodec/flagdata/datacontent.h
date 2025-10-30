@@ -3,8 +3,8 @@
 #include <qobject.h>
 #include <qmap.h>
 
-#include "../global.h"
-#include "../utils/protocolflagdata.h"
+#include <protocolcodec/global.h>
+#include <protocolcodec/utils/protocolflagdata.h>
 
 PROTOCOL_CODEC_NAMESPACE_BEGIN
 

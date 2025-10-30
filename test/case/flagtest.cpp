@@ -1,7 +1,7 @@
 #include "flagtest.h"
 #include "byteutils.h"
 
-#include "protocolcodecengine.h"
+#include "../../src/protocolcodec/protocolcodecengine.h"
 #include <qtest.h>
 
 PROTOCOL_CODEC_USING_NAMESPACE

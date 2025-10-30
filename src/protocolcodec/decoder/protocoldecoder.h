@@ -3,9 +3,9 @@
 #include <qobject.h>
 #include <qhash.h>
 
-#include "../protocolcodecinterface.h"
-#include "../utils/protocolflagdata.h"
-#include "../protocolmetadata.h"
+#include <protocolcodec/protocolcodecinterface.h>
+#include <protocolcodec/utils/protocolflagdata.h>
+#include <protocolcodec/protocolmetadata.h>
 
 PROTOCOL_CODEC_NAMESPACE_BEGIN
 
