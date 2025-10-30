@@ -99,8 +99,15 @@ configure_package_config_file(${CMAKE_SOURCE_DIR}/cmake/ProtocolCodecEngineConfi
     INSTALL_DESTINATION lib/cmake/ProtocolCodecEngine
 )
 
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/ProtocolCodecEngineConfigVersion.cmake"
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+
 install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/ProtocolCodecEngineConfig.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/ProtocolCodecEngineConfigVersion.cmake"
     DESTINATION lib/cmake/ProtocolCodecEngine
 )
 
