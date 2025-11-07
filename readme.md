@@ -9,19 +9,23 @@
 ```cpp
 ProtocolCodecEngine codecEngine;
 //定义协议帧格式
-codecEngine.frameDeclare("H(5AFF)S2CV(CRC16)E(FE)");
-//定义校验使用的标志符
-codecEngine.setVerifyFlags("SC");
-//设置数据类型编码字节数，默认2字节
-codecEngine.setTypeEncodeByteSize(3);
+codecEngine.frameDeclare("H(5AFF)A1S2T1CV(CRC16)E(FE)");
+//定义校验使用的标志符，默认为"C"
+codecEngine.setVerifyFlags("STC");
+//定义计算字节数使用的标志符，默认为"C"
+codecEngine.setSizeFlags("TC");
+//设置地址值
+codecEngine.setAddressValue(0x01);
 ```
-|标志符|说明|示例|
-|:--:|:--|:--|
-|H|header/帧头|5AFF|
-|S|size/内容字节数大小|2|
-|C|content/内容（隐式包含数据类型）||
-|V|verify/校验类型|CRC16、SUM8、SUM16|
-|E|end/帧尾|FE|
+|标志符|说明| 示例               |
+|:--:|:--|:-----------------|
+|H|header/帧头| 5AFF             |
+|A|address/地址| 1字节              |
+|S|size/内容字节数大小| 2字节              |
+|T|type/数据类型标志| 1字节              |
+|C|content/内容|                  |
+|V|verify/校验类型| CRC16、SUM8、SUM16 |
+|E|end/帧尾| FE               |
 
 使用`setLogging`函数设置日志筛选器进行打印，检查解码过程中的错误：
 
