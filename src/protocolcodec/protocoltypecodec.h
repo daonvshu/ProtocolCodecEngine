@@ -3,6 +3,7 @@
 #include <qbytearray.h>
 #include <qdatastream.h>
 #include <qjsondocument.h>
+#include <qiodevice.h>
 
 #include "global.h"
 

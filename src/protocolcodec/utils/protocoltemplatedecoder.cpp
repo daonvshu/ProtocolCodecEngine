@@ -78,7 +78,7 @@ QList<ProtocolTemplateDecoder::Segment> ProtocolTemplateDecoder::parseToSegment(
         }
 
         if (isComment(c)) {
-            if (c == "(") {
+            if (c == '(') {
                 lastSegment.type = QString();
                 lastSegment.data = QString();
                 lastSegment.isContentBegin = true;
