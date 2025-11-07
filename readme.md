@@ -327,6 +327,14 @@ public:
 
 ```
 
+## 导入库
+
+```cmake
+find_package(ProtocolCodecEngine 1.x.x REQUIRED)
+
+target_link_libraries(${PROJECT_NAME} ProtocolCodec::ProtocolCodecEngine)
+```
+
 ## 解码优化
 
 下面提出的几个解码优化方案并非强制性的，在高速数据传输的场景中，能够提升解码性能。
