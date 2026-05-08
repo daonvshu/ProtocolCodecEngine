@@ -129,6 +129,12 @@ QByteArray ProtocolEncoder::encodeSize(ProtocolFlagData* flagData, int contentSi
     }
     byteSize += contentSize;
 
+    const quint64 maxSize = (static_cast<quint64>(1) << (flagData->byteSize * 8)) - 1;
+    if (static_cast<quint64>(byteSize) > maxSize) {
+        qFatal("Protocol size overflow: value=%d cannot fit in %d byte(s), max=%llu. Please check the Size definition in the frame protocol.",
+               byteSize, flagData->byteSize, static_cast<unsigned long long>(maxSize));
+    }
+
     QByteArray buff((char*)&byteSize, flagData->byteSize);
     if (!flagData->isLittleEndian) {
         ByteUtils::byteSwap(buff);
