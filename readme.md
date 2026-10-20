@@ -417,6 +417,82 @@ S 自身不计入长度。例如 `setSizeFlags("TC")` 且 T1 时，`Size = 1 + �
 - 固定内容 C8 与 S 混用：当前编码长度计算可能重复计入固定内容长度，建议使用固定长度或变长内容中的一种。
 - 固定内容编码时传入长度不符的数据：编码器不会自动补齐、裁剪或拒绝。
 
+### 9. 同一连接接收多种协议
+
+`MultiProtocolCodec` 用于一条串口或 Socket 字节流中，字段结构相同、帧头/帧尾/地址特征不同的协议。
+协议通过独立编号区分，同一个 Type 可以在不同协议中分别注册回调。发送时显式指定协议编号。
+
+```cpp
+#include <protocolcodec/multiprotocolcodec.h>
+
+MultiProtocolCodec codec;
+MultiProtocolCodec::ProtocolDefinition first;
+first.frameTemplate = "H(AA55)T1A1S2CV(CRC16)E(0D0A)";
+first.verifyFlags = "STAC";
+first.sizeFlags = "TC";
+first.address = 1;
+first.maximumSize = 4096;
+
+auto second = first;
+second.frameTemplate = "H(AA66)T1A1S2CV(CRC16)E(0D0A)";
+second.address = 2;
+
+codec.addProtocol(10, first);
+codec.addProtocol(20, second);
+// 在接收类的成员函数中注册；DataType3 为前面定义的内容类型
+codec.registerType<BytesCodec<DataType3>>(10, this, &Receiver::onFirstProtocol);
+codec.registerType<BytesCodec<DataType3>>(20, this, &Receiver::onSecondProtocol);
+
+// 同一个接收入口接收两种协议，不需要给每个协议重复投递数据
+codec.appendBuffer(socket->readAll());
+socket->write(codec.encode(20, data));
+```
+
+仅帧头不同、其余使用默认参数时，也可以直接传入定义字符串：
+
+```cpp
+codec.addProtocol(10, "H(AA55)T1S2CV(CRC16)E(0D0A)");
+codec.addProtocol(20, "H(AA66)T1S2CV(CRC16)E(0D0A)");
+// 默认 Size 与 CRC 只计算 C；若需包含 T/S 等字段，请使用 ProtocolDefinition。
+```
+
+无内容命令使用 `registerType<命令值>(协议编号, 接收对象, 回调)`，发送使用 `encode<命令值>(协议编号)`。
+没有 Size 时，通过 `contentSizeFromType` 指定类型长度，或使用 C8 等固定长度定义。
+
+`ProtocolDefinition::encodeOnly` 默认为 `false`，协议同时用于解析和编码。
+设置为 `true` 后仍可注册内容编码器并调用 `encode()`，但不会进入接收候选表、触发解析回调或更新解码元数据：
+
+```cpp
+auto sendOnly = first;
+sendOnly.encodeOnly = true;
+codec.addProtocol(30, sendOnly);
+codec.registerType<DataType3, BytesCodec>(30);
+socket->write(codec.encode(30, data));
+```
+
+仅编码协议仍需遵守相同结构约束，但可以与其他协议使用相同的帧头、帧尾和地址特征。
+如果全部协议均为仅编码，`appendBuffer()` 会直接忽略输入。
+
+所有协议必须具有相同的字段顺序、字段宽度（包含 H/E 的字节数）、大小端、内容长度规则、
+校验算法以及参与长度/校验的字段集合。只有 H/E 的实际字节和 `address` 可以不同；
+`maximumSize` 可以为各协议单独设置。每条定义必须以非空 H 开头，并且显式包含 T。
+不支持重复字段、固定 C8 与 S 混用，或长度来源位于变长 C 后等无效组合。
+无效配置、重复协议编号、参与解析的协议之间无法区分的重复特征以及未知协议编号会抛出 `ProtocolException`。
+
+接收端使用一个公共缓存，先按帧头筛选候选，再校验帧尾、地址和 CRC。
+一条帧校验成功后，只分发给它所属协议，内容中包含其他协议的帧头不会重复分发。
+尚未收齐的候选帧会等待，不会抢先解析其内部可能存在的另一条帧。
+因此，损坏但仍在上限内的长度可能延迟后续帧；应根据链路实际设置 `maximumSize`、
+公共 `setBufferMaxSize()` 和接收间隔 `setDecodeTimeout()`。超时在下一批数据到达时检查。
+
+`setLogging()`、`setDecodeErrorLogFlags()` 对所有协议及公共接收诊断生效。
+开启 `enableRecordDecodeMetaData()` 后，可以通过 `getLastDecodeMetaData(协议编号)` 查询成功帧，
+`lastDecodedProtocolId()` 返回最近接受的协议编号。
+
+所有调用应在同一个线程中顺序执行；允许回调中再次调用 `appendBuffer()`，新输入会排队，
+当前输入中的剩余帧先处理。回调中的 `clearDecodeCacheBuffer()` 会清除剩余缓存和已经排队的输入。
+注册协议应在接收前进行；有未完成输入时，先显式清缓存。`clearProtocols()` 清除全部协议，不能在回调中调用。
+
 ## 导入库
 
 ```cmake

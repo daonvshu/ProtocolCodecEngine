@@ -6,9 +6,17 @@
 #include "case/flagtest.h"
 #include "case/codectest.h"
 #include "case/filetest.h"
+#include "case/multiprotocoltest.h"
 
 int main(int argc, char* argv[]) {
     QCoreApplication a(argc, argv);
+
+    if (a.arguments().contains("--multi-protocol-tests")) {
+        MultiProtocolTest test;
+        const int result = QTest::qExec(&test, QStringList{a.arguments().first(), "-o", "multi-protocol-tests.txt"});
+        TestUtils::printTestLog("multi-protocol-tests.txt");
+        return result;
+    }
 
     if (a.arguments().contains("--decode-error-tests")) {
         FunctionalTest test;

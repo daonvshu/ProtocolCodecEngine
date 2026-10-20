@@ -210,6 +210,7 @@ public:
     ProtocolMetaData getLastDecodeMetaData(int type) const;
 
 private:
+    friend class MultiProtocolCodec;
     static void clearFlags(ProtocolFlagData* flags);
     QList<ProtocolFlagData*> getFlagDataByFlags(ProtocolFlagData* makeFlags) const;
 

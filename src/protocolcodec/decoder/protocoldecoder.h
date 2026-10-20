@@ -38,9 +38,10 @@ public:
     ProtocolMetaData getLastMetaData(int type) const;
 
 private:
+    friend class MultiProtocolCodec;
     enum class DecodeResult { Complete, Incomplete, Invalid };
 
-    DecodeResult decodeFrame(int offset, ProtocolMetaData* metadata, int& frameSize,
+    DecodeResult decodeFrame(QByteArray& buffer, int offset, ProtocolMetaData* metadata, int& frameSize,
                              int& type, QByteArray& content, DecodeError& error, QString& detail);
     bool errorLoggingEnabled(DecodeError error) const;
     void logDecodeError(DecodeError error, const QString& detail, const QByteArray& bytes,

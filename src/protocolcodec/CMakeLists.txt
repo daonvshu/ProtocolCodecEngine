@@ -26,6 +26,8 @@ endif ()
 add_library(${PROJECT_NAME} ${_build_type}
     protocolcodecengine.h
     protocolcodecengine.cpp
+    multiprotocolcodec.h
+    multiprotocolcodec.cpp
     protocolcodecinterface.h
     protocolcodecinterface.cpp
 

@@ -30,6 +30,8 @@ add_executable(${PROJECT_NAME} WIN32
     case/codectest.cpp
     case/filetest.h
     case/filetest.cpp
+    case/multiprotocoltest.h
+    case/multiprotocoltest.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}

@@ -115,7 +115,7 @@ void ProtocolDecoder::addBuffer(const QByteArray &buffer) {
         QByteArray content;
         DecodeError error = DecodeError::None;
         QString detail;
-        const auto result = decodeFrame(offset, metadataEnable ? &metadata : nullptr,
+        const auto result = decodeFrame(bufferCache, offset, metadataEnable ? &metadata : nullptr,
                                         frameSize, type, content, error, detail);
         if (metadataEnable && metadata.decodeType != INT_MAX) {
             metaData[metadata.decodeType] = metadata;
@@ -165,9 +165,9 @@ void ProtocolDecoder::addBuffer(const QByteArray &buffer) {
     }
 }
 
-ProtocolDecoder::DecodeResult ProtocolDecoder::decodeFrame(int offset, ProtocolMetaData* metadata,
+ProtocolDecoder::DecodeResult ProtocolDecoder::decodeFrame(QByteArray& buffer, int offset, ProtocolMetaData* metadata,
     int& frameSize, int& type, QByteArray& content, DecodeError& error, QString& detail) {
-    const int available = bufferCache.size() - offset;
+    const int available = buffer.size() - offset;
     bool addressMismatch = false;
     QString addressDetail;
     const auto byteSize = [](ProtocolFlagData* flag) {
@@ -215,7 +215,7 @@ ProtocolDecoder::DecodeResult ProtocolDecoder::decodeFrame(int offset, ProtocolM
                 return DecodeResult::Invalid;
             }
         }
-        if (flag->verify(bufferCache.data(), offset, bufferCache.size(), metadata, nullptr)) {
+        if (flag->verify(buffer.data(), offset, buffer.size(), metadata, nullptr)) {
             if (flag->flag == ProtocolFlag::Flag_Type) {
                 type = static_cast<ProtocolFlagDataType*>(flag)->value;
             } else if (flag->flag == ProtocolFlag::Flag_Content) {
@@ -236,7 +236,7 @@ ProtocolDecoder::DecodeResult ProtocolDecoder::decodeFrame(int offset, ProtocolM
                     for (auto* node = flag->prev; node != nullptr; node = node->prev) fieldOffset += byteSize(node);
                     addressDetail = QString("expected=%1 received=%2")
                         .arg(QString::fromLatin1(flag->getBytesContent().toHex(' ')),
-                             QString::fromLatin1(bufferCache.mid(offset + fieldOffset, flag->byteSize).toHex(' ')));
+                             QString::fromLatin1(buffer.mid(offset + fieldOffset, flag->byteSize).toHex(' ')));
                 }
                 continue;
             case ProtocolFlag::Flag_Size: {
@@ -254,7 +254,7 @@ ProtocolDecoder::DecodeResult ProtocolDecoder::decodeFrame(int offset, ProtocolM
                     for (auto* node = flag->prev; node != nullptr; node = node->prev) fieldOffset += byteSize(node);
                     detail = QString("expected=%1 received=%2")
                         .arg(QString::fromLatin1(flag->getBytesContent().toHex(' ')),
-                             QString::fromLatin1(bufferCache.mid(offset + fieldOffset, flag->byteSize).toHex(' ')));
+                             QString::fromLatin1(buffer.mid(offset + fieldOffset, flag->byteSize).toHex(' ')));
                 }
                 break;
             case ProtocolFlag::Flag_Verify:
@@ -265,7 +265,7 @@ ProtocolDecoder::DecodeResult ProtocolDecoder::decodeFrame(int offset, ProtocolM
                     for (auto* node = flag->prev; node != nullptr; node = node->prev) fieldOffset += byteSize(node);
                     detail = QString("algorithm=%1 calculated=%2 received=%3").arg(flag->dataToString(),
                         QString::fromLatin1(QByteArray(verify->decodeVerifyBuffer, flag->byteSize).toHex(' ')),
-                        QString::fromLatin1(bufferCache.mid(offset + fieldOffset, flag->byteSize).toHex(' ')));
+                        QString::fromLatin1(buffer.mid(offset + fieldOffset, flag->byteSize).toHex(' ')));
                 }
                 break;
             case ProtocolFlag::Flag_Header:
