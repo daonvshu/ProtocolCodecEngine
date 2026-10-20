@@ -1,6 +1,7 @@
 #pragma once
 
 #include <qobject.h>
+#include <functional>
 
 #include "global.h"
 #include "protocoltypecodec.h"
@@ -90,6 +91,13 @@ public:
      * @param flags 按位组合 DecodeError；None 关闭，All 全开；不影响编码日志
      */
     void setDecodeErrorLogFlags(DecodeErrorFlags flags);
+
+    /**
+     * @brief 注册指定 Type 的原始内容回调，整帧校验成功后同步交付 C 字节
+     * @param type 协议中的 Type 值
+     * @param callback 替换该 Type 的接收回调，不修改编码器；空回调抛出 ProtocolException
+     */
+    void registerRawType(int type, const std::function<void(const QByteArray&)>& callback);
 
     /**
      * @brief 注册类型和解析回调

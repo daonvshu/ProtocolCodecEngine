@@ -19,6 +19,9 @@ private slots:
     void configurationValidation();
     void independentEncoding();
     void encodeOnlyProtocols();
+    void rawContentCallbacks();
+    void multiProtocolRawCallbacks();
+    void nestedContentRouting();
     void mixedPartitions();
     void nestedFrameWait();
     void badFramesRecover();

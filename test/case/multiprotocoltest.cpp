@@ -177,6 +177,158 @@ void MultiProtocolTest::encodeOnlyProtocols() {
     QCOMPARE(receivedProtocols, (QList<int>{2, 3, 2, 2}));
 }
 
+void MultiProtocolTest::rawContentCallbacks() {
+    ProtocolCodecEngine codec;
+    const auto config = definition();
+    codec.frameDeclare(config.frameTemplate);
+    codec.setVerifyFlags(config.verifyFlags);
+    codec.setSizeFlags(config.sizeFlags);
+    codec.setAddressValue(config.address);
+    codec.setDecodeErrorLogFlags(DecodeError::None);
+    codec.enableRecordDecodeMetaData();
+    QList<QByteArray> contents;
+    codec.registerRawType(MultiProtocolPacket::Type, [&](const QByteArray& content) { contents.append(content); });
+    const QByteArray content = QByteArray::fromHex("0001aa550d0aff00");
+    const auto frame = independentFrame(content);
+    for (int split = 0; split <= frame.size(); ++split) {
+        contents.clear();
+        codec.clearDecodeCacheBuffer();
+        codec.appendBuffer(frame.left(split));
+        QCOMPARE(contents.size(), split == frame.size() ? 1 : 0);
+        codec.appendBuffer(frame.mid(split));
+        QCOMPARE(contents, QList<QByteArray>{content});
+        QCOMPARE(codec.getLastDecodeMetaData().content, content);
+    }
+    contents.clear();
+    codec.appendBuffer(independentFrame(QByteArray()));
+    QCOMPARE(contents, QList<QByteArray>{QByteArray()});
+
+    codec.registerType<BytesCodec<MultiProtocolPacket>>(this, &MultiProtocolTest::receiveOne);
+    codec.appendBuffer(frame);
+    QCOMPARE(receivedProtocols, QList<int>{1});
+    contents.clear();
+    codec.registerRawType(MultiProtocolPacket::Type, [&](const QByteArray& bytes) { contents.append(bytes); });
+    QVERIFY_EXCEPTION_THROWN(codec.registerRawType(MultiProtocolPacket::Type, {}), ProtocolException);
+    codec.appendBuffer(frame);
+    QCOMPARE(contents, QList<QByteArray>{content});
+    QCOMPARE(receivedProtocols, QList<int>{1});
+    QCOMPARE(codec.encode(MultiProtocolPacket{content}), frame);
+
+    codec.frameDeclare("H(1122)T1E(3344)");
+    codec.registerRawType(7, [&](const QByteArray& bytes) { contents.append(bytes); });
+    codec.appendBuffer(QByteArray::fromHex("1122073344"));
+    QCOMPARE(contents, (QList<QByteArray>{content, QByteArray()}));
+}
+
+void MultiProtocolTest::multiProtocolRawCallbacks() {
+    MultiProtocolCodec codec;
+    configure(codec);
+    QList<int> protocols;
+    QList<QByteArray> contents;
+    codec.registerRawType(1, MultiProtocolPacket::Type, [&](const QByteArray& bytes) {
+        protocols.append(1);
+        contents.append(bytes);
+    });
+    codec.registerRawType(2, MultiProtocolPacket::Type, [&](const QByteArray& bytes) {
+        protocols.append(2);
+        contents.append(bytes);
+    });
+    QVERIFY_EXCEPTION_THROWN(codec.registerRawType(99, MultiProtocolPacket::Type,
+        [](const QByteArray&) {}), ProtocolException);
+    QVERIFY_EXCEPTION_THROWN(codec.registerRawType(1, MultiProtocolPacket::Type, {}), ProtocolException);
+    const QByteArray first = QByteArray::fromHex("0001aa00");
+    const QByteArray second = QByteArray::fromHex("ff0055ff");
+    const auto firstFrame = independentFrame(first);
+    const auto secondFrame = independentFrame(second, QByteArray::fromHex("aa66"), QByteArray::fromHex("0e0b"), 2);
+    const auto thirdFrame = independentFrame(first, QByteArray::fromHex("aa55"), QByteArray::fromHex("0e0b"), 1);
+    codec.appendBuffer(firstFrame + secondFrame + thirdFrame);
+    QCOMPARE(protocols, (QList<int>{1, 2}));
+    QCOMPARE(contents, (QList<QByteArray>{first, second}));
+    QCOMPARE(receivedProtocols, QList<int>{3});
+    QCOMPARE(codec.encode(1, MultiProtocolPacket{first}), firstFrame);
+
+    auto sendOnly = definition("AA77");
+    sendOnly.encodeOnly = true;
+    codec.addProtocol(5, sendOnly);
+    codec.registerRawType(5, MultiProtocolPacket::Type, [&](const QByteArray&) { protocols.append(5); });
+    codec.appendBuffer(independentFrame(first, QByteArray::fromHex("aa77")) + firstFrame);
+    QCOMPARE(protocols, (QList<int>{1, 2, 1}));
+}
+
+void MultiProtocolTest::nestedContentRouting() {
+    ProtocolCodecEngine outer;
+    const auto config = definition("1122", "3344");
+    outer.frameDeclare(config.frameTemplate);
+    outer.setVerifyFlags(config.verifyFlags);
+    outer.setSizeFlags(config.sizeFlags);
+    outer.setAddressValue(config.address);
+    outer.setDecodeErrorLogFlags(DecodeError::None);
+    MultiProtocolCodec inner;
+    configure(inner);
+    QList<QByteArray> outerContents;
+    outer.registerRawType(MultiProtocolPacket::Type, [&](const QByteArray& bytes) {
+        outerContents.append(bytes);
+        inner.appendBuffer(bytes);
+    });
+    const QByteArray content = QByteArray::fromHex("0001ffaa00");
+    const auto innerFrame = independentFrame(content);
+    const auto secondInner = independentFrame(content, QByteArray::fromHex("aa66"), QByteArray::fromHex("0e0b"), 2);
+    const auto wrap = [&](const QByteArray& bytes) {
+        return independentFrame(bytes, QByteArray::fromHex("1122"), QByteArray::fromHex("3344"));
+    };
+    const auto frame = wrap(innerFrame);
+    for (int split = 0; split <= frame.size(); ++split) {
+        outerContents.clear();
+        receivedProtocols.clear();
+        receivedContents.clear();
+        outer.clearDecodeCacheBuffer();
+        inner.clearDecodeCacheBuffer();
+        outer.appendBuffer(frame.left(split));
+        QCOMPARE(receivedProtocols.size(), split == frame.size() ? 1 : 0);
+        outer.appendBuffer(frame.mid(split));
+        QCOMPARE(outerContents, QList<QByteArray>{innerFrame});
+        QCOMPARE(receivedProtocols, QList<int>{1});
+        QCOMPARE(receivedContents, QList<QByteArray>{content});
+    }
+
+    auto corruptOuter = frame;
+    corruptOuter[corruptOuter.size() - 4] = char(uchar(corruptOuter.at(corruptOuter.size() - 4)) ^ 1);
+    outerContents.clear();
+    receivedProtocols.clear();
+    outer.appendBuffer(corruptOuter + frame);
+    QCOMPARE(outerContents, QList<QByteArray>{innerFrame});
+    QCOMPARE(receivedProtocols, QList<int>{1});
+
+    auto corruptInner = innerFrame;
+    corruptInner[corruptInner.size() - 4] = char(uchar(corruptInner.at(corruptInner.size() - 4)) ^ 1);
+    outerContents.clear();
+    receivedProtocols.clear();
+    outer.appendBuffer(wrap(corruptInner + innerFrame + secondInner));
+    QCOMPARE(outerContents, QList<QByteArray>{corruptInner + innerFrame + secondInner});
+    QCOMPARE(receivedProtocols, (QList<int>{1, 2}));
+
+    outerContents.clear();
+    receivedProtocols.clear();
+    receivedContents.clear();
+    outer.appendBuffer(wrap(innerFrame.left(5)));
+    QVERIFY(receivedProtocols.isEmpty());
+    outer.appendBuffer(wrap(innerFrame.mid(5)));
+    QCOMPARE(outerContents, (QList<QByteArray>{innerFrame.left(5), innerFrame.mid(5)}));
+    QCOMPARE(receivedProtocols, QList<int>{1});
+    QCOMPARE(receivedContents, QList<QByteArray>{content});
+
+    ProtocolCodecEngine differentInner;
+    differentInner.frameDeclare("H(99)T2!C3V(SUM8)E(88)");
+    differentInner.setVerifyFlags("TC");
+    QList<QByteArray> finalContents;
+    differentInner.registerRawType(7, [&](const QByteArray& bytes) { finalContents.append(bytes); });
+    outer.registerRawType(MultiProtocolPacket::Type, [&](const QByteArray& bytes) {
+        differentInner.appendBuffer(bytes);
+    });
+    outer.appendBuffer(wrap(QByteArray::fromHex("9900070102030d88")));
+    QCOMPARE(finalContents, QList<QByteArray>{QByteArray::fromHex("010203")});
+}
+
 void MultiProtocolTest::mixedPartitions() {
     const QList<QByteArray> contents = {QByteArray::fromHex("0134"), QByteArray(),
         QByteArray::fromHex("00550066"), QByteArray::fromHex("0304")};

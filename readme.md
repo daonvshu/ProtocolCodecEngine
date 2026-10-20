@@ -493,6 +493,40 @@ socket->write(codec.encode(30, data));
 当前输入中的剩余帧先处理。回调中的 `clearDecodeCacheBuffer()` 会清除剩余缓存和已经排队的输入。
 注册协议应在接收前进行；有未完成输入时，先显式清缓存。`clearProtocols()` 清除全部协议，不能在回调中调用。
 
+### 10. 原始内容回调与嵌套协议
+
+当 C 字段包含另一种协议的帧时，可通过 `registerRawType()` 按 Type 注册原始内容回调，
+由业务将这些字节交给独立的内层解析器。内外层分别定义协议，结构不必相同：
+
+```cpp
+// outer 和 inner 由业务持有，在接收期间持续存活；均已完成各自的协议定义。
+outer.registerRawType(0x10, [&inner](const QByteArray& content) {
+    inner.appendBuffer(content);
+});
+
+// 内层照常注册业务数据类型，成功后直接收到最终内容。
+inner.registerType<BytesCodec<DataType3>>(this, &Receiver::onInnerData);
+```
+
+`MultiProtocolCodec` 使用 `registerRawType(协议编号, Type, 回调)`，例如：
+
+```cpp
+multiCodec.registerRawType(10, 0x10, [&inner](const QByteArray& content) {
+    inner.appendBuffer(content);
+});
+```
+
+回调仅在外层整帧通过配置的校验后触发，收到的字节与 C 完全一致，不包含外层 H/A/T/S/V/E；
+空 C 或无 C 的命令收到空数组。回调同步执行，需要保存或异步处理时应复制 `QByteArray`，不要保存其引用。
+同一 Type 重新注册原始回调会替换已有接收回调，已有内容编码器保持不变；
+该接口只注册接收处理，不自动注册内容编码器。空回调会抛出 `ProtocolException`。
+仅编码协议仍不参与解析，即使注册了原始回调也不会触发。
+
+内层 `appendBuffer()` 继续遵循流式解析规则，可接收一个 C 中的多帧，也可在多个 C 之间保留半帧。
+业务应按实际协议决定是否在外层消息边界调用内层的 `clearDecodeCacheBuffer()`，
+并为不同数据通道分别维护内层解析器，避免无关的半帧拼接。此回调本身不保证一个 C 恰好对应一条内层帧。
+使用 lambda 捕获的对象由业务管理生命周期，解析调用应在同一线程顺序执行。
+
 ## 导入库
 
 ```cmake

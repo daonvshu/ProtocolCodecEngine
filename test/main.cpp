@@ -11,6 +11,14 @@
 int main(int argc, char* argv[]) {
     QCoreApplication a(argc, argv);
 
+    if (a.arguments().contains("--raw-content-tests")) {
+        MultiProtocolTest test;
+        const int result = QTest::qExec(&test, QStringList{a.arguments().first(), "rawContentCallbacks",
+            "multiProtocolRawCallbacks", "nestedContentRouting", "-o", "raw-content-tests.txt"});
+        TestUtils::printTestLog("raw-content-tests.txt");
+        return result;
+    }
+
     if (a.arguments().contains("--multi-protocol-tests")) {
         MultiProtocolTest test;
         const int result = QTest::qExec(&test, QStringList{a.arguments().first(), "-o", "multi-protocol-tests.txt"});

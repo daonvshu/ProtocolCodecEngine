@@ -1,5 +1,6 @@
 #include "protocolcodecengine.h"
 
+#include "protocolexception.h"
 #include "flagdata/datacontent.h"
 #include "flagdata/dataverify.h"
 #include "utils/protocoltemplatedecoder.h"
@@ -108,6 +109,11 @@ void ProtocolCodecEngine::setLogging(LoggingCategoryPtr categoryPtr) {
 
 void ProtocolCodecEngine::setDecodeErrorLogFlags(DecodeErrorFlags flags) {
     decoder.setDecodeErrorLogFlags(flags);
+}
+
+void ProtocolCodecEngine::registerRawType(int type, const std::function<void(const QByteArray&)>& callback) {
+    if (!callback) throw ProtocolException("Raw content callback must not be empty.");
+    decoder.addType(type, callback);
 }
 
 void ProtocolCodecEngine::appendBuffer(const QByteArray &buffer) {

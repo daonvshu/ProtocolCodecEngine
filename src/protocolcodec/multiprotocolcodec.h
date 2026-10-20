@@ -46,6 +46,16 @@ public:
     void clearProtocols();
 
     /**
+     * @brief 为指定协议和 Type 注册原始内容回调，整帧校验成功后同步交付 C 字节
+     * @param protocolId 已注册的协议编号；仅编码协议不会触发回调
+     * @param type 协议中的 Type 值
+     * @param callback 替换该 Type 的接收回调，不修改编码器
+     */
+    void registerRawType(int protocolId, int type, const std::function<void(const QByteArray&)>& callback) {
+        requireProtocol(protocolId).registerRawType(type, callback);
+    }
+
+    /**
      * @brief 为指定协议注册内容编解码器及回调，不同协议允许使用相同的 Type
      */
     template<typename Codec, typename T, typename K>
