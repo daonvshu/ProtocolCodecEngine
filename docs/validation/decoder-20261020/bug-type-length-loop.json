@@ -1,0 +1,14 @@
+{
+  "baseline": {
+    "completed": false,
+    "exit_code": 62097,
+    "normal_exit": false,
+    "output": ""
+  },
+  "current": {
+    "completed": true,
+    "exit_code": 0,
+    "normal_exit": true,
+    "output": "probe=type-length-loop callbacks=1 expected_behavior=1"
+  }
+}

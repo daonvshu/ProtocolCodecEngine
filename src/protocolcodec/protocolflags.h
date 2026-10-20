@@ -6,6 +6,22 @@
 
 PROTOCOL_CODEC_NAMESPACE_BEGIN
 
+enum class DecodeError {
+    None = 0,
+    HeaderMismatch = 1 << 0,
+    AddressMismatch = 1 << 1,
+    InvalidLength = 1 << 2,
+    TailMismatch = 1 << 3,
+    ChecksumMismatch = 1 << 4,
+    UnknownType = 1 << 5,
+    Timeout = 1 << 6,
+    BufferOverflow = 1 << 7,
+    All = (1 << 8) - 1,
+};
+
+Q_DECLARE_FLAGS(DecodeErrorFlags, DecodeError)
+Q_DECLARE_OPERATORS_FOR_FLAGS(DecodeErrorFlags)
+
 enum class ProtocolFlag {
     Flag_Header = 0,
     Flag_Address,

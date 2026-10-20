@@ -21,9 +21,9 @@ codecEngine.setAddressValue(0x01);
 |:--:|:--|:-----------------|
 |H|header/帧头| 5AFF             |
 |A|address/地址| 1字节              |
-|S|size/内容字节数大小| 2字节              |
-|T|type/数据类型标志| 1字节              |
-|C|content/内容|                  |
+|S|size/所选字段的字节数，默认只计算内容| 2字节              |
+|T|type/数据类型标志，必须显式定义| 1字节              |
+|C|content/内容，不隐式包含T| C为变长，C8为固定8字节 |
 |V|verify/校验类型| CRC16、SUM8、SUM16 |
 |E|end/帧尾| FE               |
 
@@ -34,6 +34,35 @@ Q_LOGGING_CATEGORY(printTest, "print_test")
 
 codecEngine.setLogging(printTest);
 ```
+
+解析错误可以通过枚举按位组合选择。例如，只记录帧尾错误和 CRC/校验和错误：
+
+```cpp
+codecEngine.setDecodeErrorLogFlags(DecodeError::TailMismatch | DecodeError::ChecksumMismatch);
+// 全部错误：DecodeError::All；关闭全部解析错误日志：DecodeError::None
+```
+
+| 标志 | 记录内容 |
+| --- | --- |
+| `HeaderMismatch` | 找不到帧头而丢弃的连续字节（合并打印，不逐字节刷屏） |
+| `AddressMismatch` | 地址不匹配，包含期望值和收到值 |
+| `InvalidLength` | 长度超限、负内容长度或长度溢出 |
+| `TailMismatch` | 帧尾不匹配，包含期望字节和收到字节 |
+| `ChecksumMismatch` | CRC/校验和错误，包含算法、实际计算值和收到值 |
+| `UnknownType` | 未注册解码回调，或按类型确定内容长度时找不到该类型 |
+| `Timeout` | 下次收到数据时检测到接收间隔超时，丢弃旧缓存 |
+| `BufferOverflow` | 超过缓存限制而丢弃最早的缓存字节 |
+
+默认启用 `AddressMismatch`、`InvalidLength`、`ChecksumMismatch`、`UnknownType` 和 `Timeout`。
+错误日志通过 `setLogging` 指定的分类以 warning 输出，不受该分类的 info 开关影响；未设置分类时，
+仅保留未注册类型的默认 warning。标志只控制解析错误，不控制正常编码日志。
+
+每条错误日志包含原因、字节数和**完整十六进制字节，不截断**。CRC、帧尾、地址等错误在整帧收齐后
+按协议声明长度打印当前候选帧，使用 `boundary=complete-frame` 标识；不会把紧随其后的正常帧一起打印。
+长度损坏时无法可靠确定原始帧边界，使用 `boundary=unknown`，打印当前候选帧头至下一帧头或
+缓存末尾的可用字节；帧头错误、超时和缓存超限则打印实际丢弃的字节。
+正常分包不打印错误，等待后续数据；拒绝坏帧后继续搜索帧头，以便恢复解析后续正常帧。
+同一候选帧先检查帧尾，再检查 CRC，记录首先失败的检查。
 
 ### 2. 注册数据类型
 
@@ -69,13 +98,13 @@ class TestClass {
 public:
     void registerType() {
         //定义协议帧格式
-        codecEngine.frameDeclare("H(5AFF)S2CV(CRC16)E(FE)");
+        codecEngine.frameDeclare("H(5AFF)T1S2CV(CRC16)E(FE)");
         //定义校验使用的标志符
-        codecEngine.setVerifyFlags("SC");
+        codecEngine.setVerifyFlags("STC");
         //注册类型
         codecEngine.registerType<JsonCodec<DataType1>>(this, &TestClass::dataType1Callback);
-        //不使用解码器
-        codecEngine.registerType<DataType1, JsonCodec>();
+        //仅编码时，改用下面的注册方式，不要与上一行同时注册
+        //codecEngine.registerType<DataType1, JsonCodec>();
     }
 
     void dataType1Callback(const DataType1& data) {
@@ -148,13 +177,13 @@ class TestClass {
 public:
     void registerType() {
         //定义协议帧格式
-        codecEngine.frameDeclare("H(5AFF)S2CV(CRC16)E(FE)");
+        codecEngine.frameDeclare("H(5AFF)T1S2CV(CRC16)E(FE)");
         //定义校验使用的标志符
-        codecEngine.setVerifyFlags("SC");
+        codecEngine.setVerifyFlags("STC");
         //注册类型
         codecEngine.registerType<SerializeCodec<DataType2>>(this, &TestClass::dataType2Callback);
-        //不使用解码器
-        codecEngine.registerType<DataType2, SerializeCodec>();
+        //仅编码时，改用下面的注册方式，不要与上一行同时注册
+        //codecEngine.registerType<DataType2, SerializeCodec>();
     }
 
     void dataType2Callback(const DataType2& data) {
@@ -196,13 +225,13 @@ class TestClass {
 public:
     void registerType() {
         //定义协议帧格式
-        codecEngine.frameDeclare("H(5AFF)S2CV(CRC16)E(FE)");
+        codecEngine.frameDeclare("H(5AFF)T1S2CV(CRC16)E(FE)");
         //定义校验使用的标志符
-        codecEngine.setVerifyFlags("SC");
+        codecEngine.setVerifyFlags("STC");
         //注册类型
-        codecEngine.registerType<BytesCodec<DataType2>>(this, &TestClass::dataType2Callback);
-        //不使用解码器
-        codecEngine.registerType<DataType2, BytesCodec>();
+        codecEngine.registerType<BytesCodec<DataType3>>(this, &TestClass::dataType3Callback);
+        //仅编码时，改用下面的注册方式，不要与上一行同时注册
+        //codecEngine.registerType<DataType3, BytesCodec>();
     }
 
     void dataType3Callback(const DataType3& data) {
@@ -243,9 +272,9 @@ class TestClass {
 public:
     void registerType() {
         //定义协议帧格式
-        codecEngine.frameDeclare("H(5AFF)S2CV(CRC16)E(FE)");
+        codecEngine.frameDeclare("H(5AFF)T1V(CRC16)E(FE)");
         //定义校验使用的标志符
-        codecEngine.setVerifyFlags("SC");
+        codecEngine.setVerifyFlags("T");
         //注册类型
         codecEngine.registerType<0x03>(this, &TestClass::dataType3Callback);
         //编码
@@ -288,13 +317,13 @@ class TestClass {
 public:
     void registerType() {
         //定义协议帧格式
-        codecEngine.frameDeclare("H(5AFF)S4CV(CRC16)E(FE)");
+        codecEngine.frameDeclare("H(5AFF)T1S4CV(CRC16)E(FE)");
         //定义校验使用的标志符
-        codecEngine.setVerifyFlags("SC");
+        codecEngine.setVerifyFlags("STC");
         //注册类型
         codecEngine.registerType<CompressCodec<DataType4, BytesCodec>>(this, &TestClass::dataType4Callback);
-        //仅编码
-        codecEngine.registerCompressEncoder<DataType4, BytesCodec>();
+        //仅编码时，改用下面的注册方式，不要与上一行同时注册
+        //codecEngine.registerCompressEncoder<DataType4, BytesCodec>();
     }
 
     void dataType4Callback(const DataType4& data) {
@@ -327,6 +356,67 @@ public:
 
 ```
 
+### 8. 协议字段缺省与换序
+
+定义字符串决定线上字节顺序，解码器内部的检查优先级不会改变发送顺序。下面说明的是当前实现的能力，
+不是任意字段排列都能工作的保证。每种字段应只定义一次，使用表中大写标志，字符串内不要加入空格。
+
+#### 可以省略哪些字段
+
+| 字段 | 缺省规则 |
+| --- | --- |
+| T | 必须显式定义，例如 T1；缺少时会调用 `qFatal`，不会从 C 中自动提取类型 |
+| H | 可以省略；只有 H 位于首字段时才启用帧头搜索。无帧头时仍会逐位置尝试解析，抗干扰能力取决于其他约束 |
+| A | 可以省略；存在时使用 `setAddressValue()` 指定需要匹配的地址 |
+| S | 可以省略，但 C 必须固定长度，或使用前置 T 对应的内容长度表 |
+| C | 可以省略，适用于没有参数的纯命令，例如 `H(5AFF)T1V(CRC16)E(FE)`，校验范围设置为 T |
+| V | 可以省略，此时没有 CRC/校验和保护 |
+| E | 可以省略；帧尾不是变长内容的分隔符，不能替代长度定义 |
+
+省略 S 的两种内容定义方式：
+
+```cpp
+// 固定八字节内容：调用方编码时也必须传入恰好八字节
+codecEngine.frameDeclare("H(5AFF)T1C8V(CRC16)E(FE)");
+codecEngine.setVerifyFlags("TC");
+```
+
+```cpp
+// 不同类型分别确定内容长度；0x03 是没有内容的命令
+codecEngine.frameDeclare("H(5AFF)T1CV(CRC16)E(FE)");
+codecEngine.setVerifyFlags("TC");
+codecEngine.setContentSizeDependsOnType({{0x01, 8}, {0x02, 16}, {0x03, 0}});
+// 此方式不要调用 setSizeFlags("C") 或 setSizeFlags("TC")，否则 C 会转为依赖 S。
+// 注册的内容编解码器也必须与各类型的长度一致。
+```
+
+存在 S 和变长 C 时，C 默认按前置 S 计算长度；存在 V 和 C 时，C 默认参与校验。
+`setSizeFlags()`、`setVerifyFlags()` 会追加选中的字段，不会清除已经选中的字段。
+S 自身不计入长度。例如 `setSizeFlags("TC")` 且 T1 时，`Size = 1 + 内容字节数`，
+所以空内容应写 Size=1；默认只计算 C 时，空内容可以写 Size=0。
+
+#### 哪些字段可以换位
+
+| 换序方式 | 示例 | 依赖条件 |
+| --- | --- | --- |
+| A、T、S 在内容前交换 | `H(5AFF)A1S2T1CV(CRC16)E(FE)` | S 必须在依赖它的 C 前；校验范围按实际字段设置 |
+| T 或 A 放在内容后 | `H(5AFF)S2CT1A1V(CRC16)E(FE)` | 此例的 S 在 C 前，内容长度不依赖后面的 T |
+| 固定内容在类型前 | `H(5AFF)C8T1V(CRC16)E(FE)` | C8 不依赖 T 或 S；编码内容必须恰好八字节 |
+| 帧尾放到校验前 | `H(5AFF)T1S2CE(FE)V(CRC16)` | V 后计算校验，可以通过 `setVerifyFlags("STCE")` 把 E 纳入校验 |
+| H 放在内部 | `T1C8H(5AFF)V(CRC16)E(FE)` | 走一般位置扫描而非首部帧头搜索；建议优先使用首字段 H |
+
+采用类型长度表时，T 必须在 C 前；采用 S 时，S 必须在 C 前。
+校验 V 必须位于所有参与校验的字段之后，因为编码器走到 V 时只拥有已经生成的字节。
+数值默认小端，可分别用 `T2!`、`A2!`、`S2!`、`V!(CRC16)` 指定大端。
+
+#### 尚不能保证支持的组合
+
+- 没有 S、固定长度和类型长度表，仅靠搜索 E 截取内容。
+- 变长 C 在其长度来源 S/T 前，或 V 在参与校验的内容前。
+- 重复定义同一种字段，或随意扩大 T/A/S 的字节宽度；当前没有完整的定义合法性检查。
+- 固定内容 C8 与 S 混用：当前编码长度计算可能重复计入固定内容长度，建议使用固定长度或变长内容中的一种。
+- 固定内容编码时传入长度不符的数据：编码器不会自动补齐、裁剪或拒绝。
+
 ## 导入库
 
 ```cmake
@@ -341,7 +431,8 @@ target_link_libraries(${PROJECT_NAME} ProtocolCodec::ProtocolCodecEngine)
 
 ### 1. 设置帧尾
 
-解码器按照 `帧头->帧尾->数据长度->校验` 的过程验证是否是有效帧，如果设置了帧尾，能够提前终止验证。
+解码器先读取帧头、地址、类型和长度等基础字段，确定整帧长度并等待收齐后，先检查帧尾，再检查校验和提取内容。
+设置帧尾可以在计算 CRC 前排除帧尾不匹配的候选帧；帧尾本身不用于推导未知的内容长度。
 
 ### 2. 设置帧长度最大值
 

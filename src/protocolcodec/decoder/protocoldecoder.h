@@ -27,6 +27,8 @@ public:
 
     void setDecodeTimeout(int ms);
 
+    void setDecodeErrorLogFlags(DecodeErrorFlags flags);
+
     void enableMetaDataRecord();
 
     void clearCache();
@@ -36,6 +38,14 @@ public:
     ProtocolMetaData getLastMetaData(int type) const;
 
 private:
+    enum class DecodeResult { Complete, Incomplete, Invalid };
+
+    DecodeResult decodeFrame(int offset, ProtocolMetaData* metadata, int& frameSize,
+                             int& type, QByteArray& content, DecodeError& error, QString& detail);
+    bool errorLoggingEnabled(DecodeError error) const;
+    void logDecodeError(DecodeError error, const QString& detail, const QByteArray& bytes,
+                        bool completeFrame) const;
+
     QHash<int, std::function<void(const QByteArray&)>> typeDecoders;
     QHash<int, ProtocolMetaData> metaData;
     ProtocolMetaData lastMetaData;
@@ -48,8 +58,9 @@ private:
 
     int mBufferMaxSize;
     int mDecodeTimeout;
-    QList<int> validHeaderPos;
     qint64 lastDecodeTimestamp;
+    DecodeErrorFlags errorLogFlags = DecodeError::AddressMismatch | DecodeError::InvalidLength
+        | DecodeError::ChecksumMismatch | DecodeError::UnknownType | DecodeError::Timeout;
 };
 
 PROTOCOL_CODEC_NAMESPACE_END

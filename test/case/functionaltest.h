@@ -42,6 +42,15 @@ private slots:
     void decodeTest();
     void garbageDecodeTest();
     void frameBreakTest();
+    void decodeErrorKindsTest_data();
+    void decodeErrorKindsTest();
+    void decodeErrorFlagsTest();
+    void partialFrameErrorLogTest();
+    void largeRejectedFrameLogTest();
+    void cacheDiscardErrorLogTest();
+    void framingErrorLogTest();
+    void contentLengthErrorTest();
+    void crcValueLogTest();
 
     void cleanup();
     void cleanupTestCase();

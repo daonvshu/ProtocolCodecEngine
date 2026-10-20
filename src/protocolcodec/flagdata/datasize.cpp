@@ -55,9 +55,6 @@ int ProtocolFlagDataSize::getContentSize() const {
     }
 
     int contentSize = dataSize;
-    if (contentSize == 0) {
-        return 0;
-    }
     auto next = header;
     while (next != nullptr) {
         if (next->isSizeTarget && next->flag != ProtocolFlag::Flag_Size) {

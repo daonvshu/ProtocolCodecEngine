@@ -1,0 +1,62 @@
+set(PROTOCOL_COMPARISON_BASELINE "600075a8bf33f3e1d252b2823881875b761ac803")
+find_package(Git REQUIRED)
+execute_process(COMMAND "${GIT_EXECUTABLE}" ls-tree -r --name-only
+    "${PROTOCOL_COMPARISON_BASELINE}" src/protocolcodec
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}" OUTPUT_VARIABLE baseline_files
+    RESULT_VARIABLE baseline_result OUTPUT_STRIP_TRAILING_WHITESPACE)
+if(NOT baseline_result EQUAL 0)
+    message(FATAL_ERROR "Cannot read pinned protocol comparison baseline")
+endif()
+string(REPLACE "\n" ";" baseline_files "${baseline_files}")
+set(baseline_root "${CMAKE_CURRENT_BINARY_DIR}/comparison-baseline")
+set(baseline_sources)
+foreach(source IN LISTS baseline_files)
+    if(NOT source MATCHES "\\.(cpp|h)$")
+        continue()
+    endif()
+    execute_process(COMMAND "${GIT_EXECUTABLE}" show "${PROTOCOL_COMPARISON_BASELINE}:${source}"
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}" OUTPUT_VARIABLE baseline_text RESULT_VARIABLE baseline_result)
+    if(NOT baseline_result EQUAL 0)
+        message(FATAL_ERROR "Cannot extract baseline source: ${source}")
+    endif()
+    # Isolate symbols only; the baseline decoder and verification logic remain unchanged.
+    string(REPLACE "protocol_codec" "protocol_codec_baseline" baseline_text "${baseline_text}")
+    string(REGEX REPLACE "^src/" "" relative "${source}")
+    set(destination "${baseline_root}/${relative}")
+    get_filename_component(parent "${destination}" DIRECTORY)
+    file(MAKE_DIRECTORY "${parent}")
+    if(EXISTS "${destination}")
+        file(READ "${destination}" previous_text)
+    else()
+        set(previous_text "")
+    endif()
+    if(NOT previous_text STREQUAL baseline_text)
+        file(WRITE "${destination}" "${baseline_text}")
+    endif()
+    if(source MATCHES "\\.cpp$")
+        list(APPEND baseline_sources "${destination}")
+    endif()
+endforeach()
+add_library(protocol_comparison_baseline STATIC ${baseline_sources})
+target_compile_definitions(protocol_comparison_baseline PRIVATE PROTOCOL_CODEC_STATIC)
+target_include_directories(protocol_comparison_baseline PRIVATE "${baseline_root}" "${baseline_root}/protocolcodec")
+target_link_libraries(protocol_comparison_baseline PRIVATE Qt${QT_VERSION_MAJOR}::Core)
+if(MSVC)
+    target_compile_options(protocol_comparison_baseline PRIVATE /utf-8)
+endif()
+
+add_library(protocol_baseline_adapter OBJECT comparison/adapter.cpp)
+target_compile_definitions(protocol_baseline_adapter PRIVATE CODEC_BASELINE PROTOCOL_CODEC_STATIC)
+target_include_directories(protocol_baseline_adapter PRIVATE "${baseline_root}")
+target_link_libraries(protocol_baseline_adapter PRIVATE Qt${QT_VERSION_MAJOR}::Core)
+
+add_executable(protocol_decoder_comparison comparison/main.cpp comparison/adapter.cpp
+    comparison/layoutmatrix.cpp comparison/layoutmatrix.h
+    $<TARGET_OBJECTS:protocol_baseline_adapter>)
+target_link_libraries(protocol_decoder_comparison PRIVATE ProtocolCodecEngine
+    protocol_comparison_baseline Qt${QT_VERSION_MAJOR}::Core)
+target_compile_definitions(protocol_decoder_comparison PRIVATE
+    COMPARISON_BASELINE="${PROTOCOL_COMPARISON_BASELINE}")
+if(MSVC)
+    target_compile_options(protocol_decoder_comparison PRIVATE /utf-8)
+endif()

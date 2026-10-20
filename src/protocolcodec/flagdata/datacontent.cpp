@@ -20,8 +20,13 @@ void ProtocolFlagDataContent::setContentSizeFromType(const QMap<int, int>& sizeF
 }
 
 bool ProtocolFlagDataContent::verify(char *data, int baseOffset, int maxSize, ProtocolMetaData* metaData, const QLoggingCategory& (*debugPtr)()) {
-    int curDataOffset = baseOffset + getCurrentByteOffset();
-    contentData = QByteArray(data + curDataOffset, getByteSize());
+    const qint64 curDataOffset = qint64(baseOffset) + getCurrentByteOffset();
+    const int contentSize = getByteSize();
+    if (contentSize < 0 || curDataOffset < 0 || curDataOffset > maxSize
+        || contentSize > maxSize - curDataOffset) {
+        return false;
+    }
+    contentData = QByteArray(data + curDataOffset, contentSize);
     if (metaData) {
         metaData->content = contentData;
     }
@@ -49,6 +54,7 @@ int ProtocolFlagDataContent::getByteSize() const {
             int curType = dynamic_cast<ProtocolFlagDataType*>(prevPtr)->value;
             return contentSizeFromType.value(curType, -1);
         }
+        prevPtr = prevPtr->prev;
     }
     return -1;
 }

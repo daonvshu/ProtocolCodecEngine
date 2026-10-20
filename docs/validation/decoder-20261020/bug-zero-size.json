@@ -1,0 +1,14 @@
+{
+  "baseline": {
+    "completed": true,
+    "exit_code": 1,
+    "normal_exit": true,
+    "output": "probe=zero-size callbacks=1 expected_behavior=0"
+  },
+  "current": {
+    "completed": true,
+    "exit_code": 0,
+    "normal_exit": true,
+    "output": "probe=zero-size callbacks=0 expected_behavior=1"
+  }
+}

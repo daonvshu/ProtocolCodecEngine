@@ -1,6 +1,7 @@
 #include "testutils.h"
 
 #include <qfile.h>
+#include <qdebug.h>
 #include <iostream>
 
 #ifdef Q_OS_WIN
@@ -9,7 +10,10 @@
 
 void TestUtils::printTestLog(const QString &filePath) {
     QFile file(filePath);
-    Q_ASSERT(file.open(QIODevice::ReadOnly));
+    if (!file.open(QIODevice::ReadOnly)) {
+        qWarning() << "Cannot open test output:" << filePath << file.errorString();
+        return;
+    }
     while (true) {
         auto line = file.readLine();
         if (line.isEmpty()) break;

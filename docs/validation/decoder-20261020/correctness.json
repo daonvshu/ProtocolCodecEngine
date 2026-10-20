@@ -1,0 +1,45 @@
+{
+  "baseline_commit": "600075a8bf33f3e1d252b2823881875b761ac803",
+  "baseline_split_loss_cases": 5675,
+  "comparison_cases": 21988,
+  "feed_calls_per_version": 1475419,
+  "groups": [
+    {
+      "cases": 10330,
+      "name": "eight-protocols-all-two-and-three-way-splits-and-metadata"
+    },
+    {
+      "cases": 128,
+      "name": "all-command-partition-combinations"
+    },
+    {
+      "cases": 6355,
+      "name": "single-bit-flips-deletions-insertions-and-resynchronization"
+    },
+    {
+      "cases": 5000,
+      "name": "deterministic-random-streams-and-chunks"
+    },
+    {
+      "cases": 73,
+      "name": "cache-limits-overlapping-header-and-nested-frame-policy"
+    },
+    {
+      "cases": 100,
+      "name": "logging-enabled-comparison"
+    },
+    {
+      "cases": 2,
+      "name": "receive-gap-timeout-and-explicit-clear"
+    }
+  ],
+  "known_bug_probes": 4,
+  "passed": true,
+  "split_loss_examples": [
+    "partition-format0-meta0-a0-b4",
+    "partition-format0-meta0-a0-b5",
+    "partition-format0-meta0-a0-b22",
+    "partition-format0-meta0-a0-b23",
+    "partition-format0-meta0-a1-b4"
+  ]
+}

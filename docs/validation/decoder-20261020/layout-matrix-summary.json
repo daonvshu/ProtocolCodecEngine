@@ -1,0 +1,20 @@
+{
+  "baseline_commit": "600075a8bf33f3e1d252b2823881875b761ac803",
+  "passed": true,
+  "layouts": 617,
+  "partition_cases": 427594,
+  "feed_calls": 1334498,
+  "baseline_unsplit_checks": 1018,
+  "noise_and_bad_crc_recovery_checks": 388,
+  "layouts_by_mode": {
+    "size": 301,
+    "fixed": 161,
+    "type": 81,
+    "command": 74
+  },
+  "baseline_decode_exclusions": {
+    "original-terminal-field-extraction": 92,
+    "original-type-length-loop": 16
+  },
+  "result_marker": "LAYOUT_MATRIX_RESULT passed layouts=617 partitions=427594 feeds=1334498"
+}

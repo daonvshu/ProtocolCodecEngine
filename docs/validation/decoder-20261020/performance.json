@@ -1,0 +1,97 @@
+{
+  "baseline_commit": "600075a8bf33f3e1d252b2823881875b761ac803",
+  "corpora": [
+    {
+      "bytes": 104857630,
+      "name": "valid",
+      "sha256": "bffee3fc86428250101dd1b303316df2f2e46f4652d1b607a68ec71b8174bca3"
+    },
+    {
+      "bytes": 104857663,
+      "name": "mixed",
+      "sha256": "ace3f91432b0968681c01c362f049e8adbec266824cc9488e0337fa40cea0ecf"
+    }
+  ],
+  "logging_doubling_limit": 3,
+  "no_log_ratio_limit": 1.15,
+  "passed": true,
+  "results": [
+    {
+      "baseline_median_ms": 1914.3214,
+      "bytes": 104857630,
+      "callbacks": 1416995,
+      "chunk_bytes": 64,
+      "corpus": "valid",
+      "current_maximum_feed_ms": 33.9541,
+      "current_median_ms": 1935.2698,
+      "digest": "5f8b9f7e80d121ef",
+      "frame_boundary_aligned": true,
+      "ratio": 1.0109429900329172
+    },
+    {
+      "baseline_median_ms": 1620.2827,
+      "bytes": 104857630,
+      "callbacks": 1416995,
+      "chunk_bytes": 65536,
+      "corpus": "valid",
+      "current_maximum_feed_ms": 4.9959,
+      "current_median_ms": 1645.4752,
+      "digest": "5f8b9f7e80d121ef",
+      "frame_boundary_aligned": true,
+      "ratio": 1.015548212666839
+    },
+    {
+      "baseline_median_ms": 1884.8535,
+      "bytes": 104857663,
+      "callbacks": 1368668,
+      "chunk_bytes": 64,
+      "corpus": "mixed",
+      "current_maximum_feed_ms": 4.368,
+      "current_median_ms": 1867.1962,
+      "digest": "5df158910c60f01c",
+      "frame_boundary_aligned": true,
+      "ratio": 0.9906320040257771
+    },
+    {
+      "baseline_median_ms": 1612.9578,
+      "bytes": 104857663,
+      "callbacks": 1368668,
+      "chunk_bytes": 65536,
+      "corpus": "mixed",
+      "current_maximum_feed_ms": 2.4046,
+      "current_median_ms": 1601.1376,
+      "digest": "5df158910c60f01c",
+      "frame_boundary_aligned": true,
+      "ratio": 0.9926717239595482
+    },
+    {
+      "logging_scaling": [
+        {
+          "doubling_ratio": 0,
+          "log_bytes": 5248596,
+          "maximum_feed_ms_last_round": 10.1899,
+          "median_ms": 475.7802,
+          "messages": 21993,
+          "mib": 25
+        },
+        {
+          "doubling_ratio": 1.9873119982714706,
+          "log_bytes": 10625596,
+          "maximum_feed_ms_last_round": 11.5444,
+          "median_ms": 945.5237,
+          "messages": 44012,
+          "mib": 50
+        },
+        {
+          "doubling_ratio": 2.007829311946385,
+          "log_bytes": 21204966,
+          "maximum_feed_ms_last_round": 20.9984,
+          "median_ms": 1898.4502,
+          "messages": 88033,
+          "mib": 100
+        }
+      ]
+    }
+  ],
+  "rounds": 3
+}

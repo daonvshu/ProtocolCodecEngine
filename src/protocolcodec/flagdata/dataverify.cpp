@@ -127,7 +127,7 @@ bool ProtocolFlagDataVerify::verify(char *data, int baseOffset, int maxSize, Pro
         }
         qCInfo(debugPtr) << QString("%1 check fail, calc code: %2, data code: %3")
             .arg(verifyTypeStr)
-            .arg(QString(QByteArray((char*)&decodeVerifyBuffer, byteSize).toHex()))
+            .arg(QString(QByteArray(decodeVerifyBuffer, byteSize).toHex()))
             .arg(QString(QByteArray(data + curDataOffset, byteSize).toHex()));
     }
     return valid;

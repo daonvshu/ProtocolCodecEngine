@@ -17,30 +17,34 @@ public:
     ~ProtocolCodecEngine() override;
 
     /**
-     * @brief 定义协议，例如：H(5AFF)S2CV(CRC16)E(FE) （括号表示具体值，数字表示字节数）
+     * @brief 定义协议，例如：H(5AFF)T1S2CV(CRC16)E(FE) （括号表示具体值，数字表示字节数）
      * H：header/帧头
+     * A：address/地址（可省略）
+     * T：type/数据类型（必须显式定义）
      * S：size/大小
-     * C：content/内容（隐式包含数据类型）
+     * C：content/内容，不包含独立的 T 字段；C8 表示固定八字节内容
      * V：verify/校验类型
      * E：end/帧尾
+     * 除 T 外的字段可按协议省略；变长 C 需要前置 S，或前置 T 配合类型长度表。
+     * V 应位于所有参与校验的字段之后；字段缺省与换序限制详见 README。
      * @param templateStr
      */
     void frameDeclare(const QString& templateStr);
 
     /**
-     * @brief 设置校验Flag（需要先调用frameDeclare），默认值C，例如：HSC，表示校验帧头、大小、内容所有字节数
+     * @brief 追加参与校验的字段（需要先调用frameDeclare），存在 V 和 C 时默认包含 C；例如 STC 校验长度、类型和内容
      * @param flagStr
      */
     void setVerifyFlags(const QString& flagStr) const;
 
     /**
-     * @brief 设置用于计算Size的Flag（需要先调用frameDeclare），默认值C，例如：HSC，表示计算帧头、大小、内容所有字节数
+     * @brief 追加参与 Size 计算的字段（需要先调用frameDeclare），变长 C 默认参与；例如 TC 表示类型加内容，S 自身不计入
      * @param flagStr
      */
     void setSizeFlags(const QString& flagStr) const;
 
     /**
-     * @brief 设置内容大小从类型获取，没有Size字段时使用
+     * @brief 设置各类型的内容字节数，用于没有 Size 的变长 C；T 必须在 C 前，且不要把 C 标记为 Size 计算目标
      * @param contentSizeFromType
      */
     void setContentSizeDependsOnType(const QMap<int, int>& contentSizeFromType) const;
@@ -80,6 +84,12 @@ public:
      * @param categoryPtr
      */
     void setLogging(LoggingCategoryPtr categoryPtr);
+
+    /**
+     * @brief 设置解析错误日志标志，使用 setLogging 指定的分类输出完整错误帧字节
+     * @param flags 按位组合 DecodeError；None 关闭，All 全开；不影响编码日志
+     */
+    void setDecodeErrorLogFlags(DecodeErrorFlags flags);
 
     /**
      * @brief 注册类型和解析回调

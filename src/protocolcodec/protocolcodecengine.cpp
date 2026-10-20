@@ -106,6 +106,10 @@ void ProtocolCodecEngine::setLogging(LoggingCategoryPtr categoryPtr) {
     encoder.setLogging(categoryPtr);
 }
 
+void ProtocolCodecEngine::setDecodeErrorLogFlags(DecodeErrorFlags flags) {
+    decoder.setDecodeErrorLogFlags(flags);
+}
+
 void ProtocolCodecEngine::appendBuffer(const QByteArray &buffer) {
     decoder.addBuffer(buffer);
 }
